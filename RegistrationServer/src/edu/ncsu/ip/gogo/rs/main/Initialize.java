@@ -11,8 +11,6 @@ public class Initialize {
 		// TODO Auto-generated method stub
 		RegistrationServer rs = new RegistrationServer(65423);
 		rs.init();
-		
-
 	}
 
 }

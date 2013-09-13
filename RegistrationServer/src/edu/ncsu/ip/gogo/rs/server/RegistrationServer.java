@@ -32,8 +32,6 @@ public class RegistrationServer {
 	            System.err.println("Accept failed.");
 	            System.exit(1);
 	        }
-		// TODO Auto-generated method stub
-
 	}
 
 }
