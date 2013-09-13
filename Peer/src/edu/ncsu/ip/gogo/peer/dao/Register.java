@@ -2,6 +2,7 @@ package edu.ncsu.ip.gogo.peer.dao;
 
 public class Register extends Message {
 	
+
 	private final int rfcServerPort;
 
 	public Register(String ip, String os, String version, int rfcServerPort) {

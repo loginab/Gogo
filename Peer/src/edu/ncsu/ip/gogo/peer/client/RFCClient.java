@@ -1,7 +1,15 @@
 package edu.ncsu.ip.gogo.peer.client;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
+import edu.ncsu.ip.gogo.peer.dao.Message;
 import edu.ncsu.ip.gogo.peer.dao.Register;
 import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
 
@@ -60,6 +68,7 @@ public class RFCClient implements Runnable {
             }
             
         } while (userOpt != 7);
+        
         in.close();
     }
     
@@ -67,9 +76,26 @@ public class RFCClient implements Runnable {
     	
     	System.out.println("Inside register(): " + rsHost + " , " + rsPort + " , " + rfcServerPort + " , " + os);
     	Register reg = new Register(ip, os, version, rfcServerPort);
+    	rsClient(reg);
+    }
+    
+    // Should return some response from RS
+    private void rsClient(Message m) {
+    	Socket socket;
+    	try {
+    		socket = new Socket(rsHost, rsPort);
+    		OutputStream os = socket.getOutputStream();   
+       		ObjectOutputStream oos = new ObjectOutputStream(os);   
+    		oos.writeObject(m);
+    		
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     	
     }
     
-
-
 }
