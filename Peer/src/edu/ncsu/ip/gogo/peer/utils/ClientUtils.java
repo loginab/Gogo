@@ -31,7 +31,7 @@ public class ClientUtils {
 	    		}
 	    	}
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
+			System.out.println("ClientUtils.getLocalIpAddress() - SocketException with message: " + e.getMessage());
 			e.printStackTrace();
 		}
     	

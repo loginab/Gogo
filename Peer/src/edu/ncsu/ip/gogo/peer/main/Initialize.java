@@ -51,6 +51,8 @@ public class Initialize {
     		line = parser.parse(options, args);
     	} catch (ParseException e) {
     		System.out.println("Initialize.main() - ParseException with message: " + e.getMessage());
+    		e.printStackTrace();
+    		System.exit(1);
     	}
     	
     	String rsHostIpVal = null;
@@ -73,6 +75,8 @@ public class Initialize {
             server.init();
         } catch (ServerInitFailedException e) {
             System.out.println("Initialize.main() - ServerInitFailedException with message: " + e.getMessage());
+            e.printStackTrace();
+    		System.exit(1);
         }
         
         /********************************* Initialize RFC Client **********************************/
