@@ -1,15 +1,15 @@
 package edu.ncsu.ip.gogo.rs.server;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.io.*;
 
-import edu.ncsu.ip.gogo.peer.dao.Message;
-import edu.ncsu.ip.gogo.peer.dao.Register;
+import edu.ncsu.ip.gogo.dao.MessageRequest;
+import edu.ncsu.ip.gogo.dao.PeerInfo;
+import edu.ncsu.ip.gogo.dao.RegisterRequest;
+import edu.ncsu.ip.gogo.dao.RegisterResponse;
 import edu.ncsu.ip.gogo.rs.utils.Utils;
 
 
@@ -19,6 +19,14 @@ public class RegistrationServer {
 	private List<Peer> peerList;
 	private String ipAddress;
 	private int cookieUnique ;
+	private final static String myIp;
+	private final static String myOs;
+	
+	static {
+		myIp = Utils.getLocalIpAddress();
+		myOs = Utils.getOS();
+	}
+	
 	public RegistrationServer(int prt, int cookie) {
 		port = prt;
 		cookieUnique = cookie;
@@ -58,26 +66,35 @@ public class RegistrationServer {
 	        	clientSocket = serverSocket.accept();
 	        	InputStream is = clientSocket.getInputStream();   
 	        	ObjectInputStream ois = new ObjectInputStream(is);   
-	        	Message msg = (Message)ois.readObject();
-	        	Register reg;
-	        	if(msg.getMethod().equals(Register.class.getSimpleName())) {
-	        		System.out.println("Get IP "+ msg.getMethod() + " " + Register.class.getSimpleName());
-	        		reg = (Register) msg;
+	        	MessageRequest msg = (MessageRequest)ois.readObject();
 	        	
-	        		System.out.println("Get IP "+ reg.getIp());
-	        		System.out.println("Get IP "+ reg.getRfcServerPort());
-	        	
+
+	        	if(msg instanceof RegisterRequest) {
+	        		
+	        		RegisterRequest reg;
+	        		reg = (RegisterRequest) msg;
+	        		System.out.println(reg.getRfcServerPort());
 	        		// returns the index of the peer in the linklist if exist, else returns -1
 	        	
 	        		val = checkIfExist(peerList,reg.getIp(),reg.getRfcServerPort());
+	        		
 	        		if (val == -1) {
 	        			// create the object and add the object to the list
-	        			setCookieUnique(cookieUnique++);
+	        			cookieUnique++;
 	        			
 	        			Peer obj = new Peer(reg.getIp(),getCookieUnique(),true,7200,reg.getRfcServerPort(),1,"Date");
 	        			peerList.add(obj);
+
 	        			System.out.println("Peer data added");
-	        			//return obj.getCookie();
+	        			
+	        			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, reg.getVersion(),
+	        					"OK", null, obj.getCookie());
+	        			
+	        			OutputStream os = clientSocket.getOutputStream();
+	               		ObjectOutputStream oos = new ObjectOutputStream(os);   
+	            		
+	            		oos.writeObject(regResponse);
+	        			
 	        		} else {
 	        			Peer obj = peerList.get(val);
 	        			
@@ -90,6 +107,14 @@ public class RegistrationServer {
 	        			obj.setFlag(true);
 	        			obj.setNumber_active_peer(obj.getNumber_active_peer() + 1);
 	        			System.out.println("Peer data modified");
+	        			
+	        			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, reg.getVersion(),
+	        					"OK", null, obj.getCookie());
+	        			
+	        			OutputStream os = clientSocket.getOutputStream();
+	               		ObjectOutputStream oos = new ObjectOutputStream(os);   
+	            		
+	            		oos.writeObject(regResponse);
 	        		}
 		        
 	        		
@@ -98,6 +123,7 @@ public class RegistrationServer {
 	        //scanClientScoketRequest(clientSocket);
 	        } catch (IOException e) {
 	            System.err.println("Accept failed." + e.getMessage());
+	            e.printStackTrace();
 	            System.exit(1);
 	        } catch (Exception e){
 	        	System.err.println("Exception"+e);
@@ -152,18 +178,15 @@ public class RegistrationServer {
 	 * send the list of active peers
 	 * 
 	*/
-	public List<Peer> pquery(List<Peer> prLst) {
+	public List<PeerInfo> pquery(List<Peer> prLst) {
 		
-		ListIterator<Peer> listIterator =  prLst.listIterator();
-     	ArrayList <Peer> list  = new ArrayList<Peer>();
- 		while (listIterator.hasNext()){
- 			Peer item = listIterator.next();
-     		if ((item.getFlag() == true) ) {
-     			list.add(item);
+     	ArrayList <PeerInfo> list  = new ArrayList<PeerInfo>();
+     	for (Peer peer : prLst) { 	
+ 	 		if ((peer.getFlag() == true) ) {
+ 	 			PeerInfo peerInfo = new PeerInfo(peer.getHostname(), peer.getPort());
+     			list.add(peerInfo);
      		}
- 				
  		}
-	
 		return list ;
 	}
 	

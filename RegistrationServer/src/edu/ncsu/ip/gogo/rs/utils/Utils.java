@@ -36,5 +36,9 @@ public class Utils {
     	
     	return ip;
     }
-    
+	
+	
+	public static String getOS() {
+    	return System.getProperty("os.name");
+    }
 }

@@ -1,8 +1,8 @@
-package edu.ncsu.ip.gogo.peer.dao;
+package edu.ncsu.ip.gogo.dao;
 
 import java.io.Serializable;
 
-public class Message implements Serializable {
+public class MessageRequest implements Serializable {
 
 
 	private static final long serialVersionUID = 1L;
@@ -11,13 +11,15 @@ public class Message implements Serializable {
 	private final String ip;
 	private final String os;
 	private final String version;
+	private final int cookie;
 	
 	
-	public Message(String method, String ip, String os, String version) {
+	public MessageRequest(String method, String ip, String os, String version, int cookie) {
 		this.method = method;
 		this.ip = ip;
 		this.os = os;
 		this.version = version;
+		this.cookie = cookie;
 	}
 
 
@@ -39,7 +41,9 @@ public class Message implements Serializable {
 	public String getVersion() {
 		return version;
 	}
-	
-	
-	
+
+
+	public int getCookie() {
+		return cookie;
+	}
 }

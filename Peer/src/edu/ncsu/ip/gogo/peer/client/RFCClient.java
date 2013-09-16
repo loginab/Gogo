@@ -1,7 +1,9 @@
 package edu.ncsu.ip.gogo.peer.client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -13,6 +15,7 @@ import edu.ncsu.ip.gogo.dao.KeepAliveRequest;
 import edu.ncsu.ip.gogo.dao.LeaveRequest;
 import edu.ncsu.ip.gogo.dao.MessageRequest;
 import edu.ncsu.ip.gogo.dao.MessageResponse;
+import edu.ncsu.ip.gogo.dao.PQueryRequest;
 import edu.ncsu.ip.gogo.dao.RegisterRequest;
 import edu.ncsu.ip.gogo.dao.RegisterResponse;
 import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
@@ -129,8 +132,19 @@ public class RFCClient implements Runnable {
     }
     
     private void pQuery() {
-    	KeepAliveRequest keepAlive = new KeepAliveRequest(ip, os, version, cookie);
-    	sendToRS(keepAlive);
+    	PQueryRequest pQuery = new PQueryRequest(ip, os, version, cookie);
+    	
+    	MessageResponse rsp = (MessageResponse) sendToRS(pQuery);
+    	
+    	if (rsp != null && rsp.getStatus().equals("OK")) {
+    		System.out.println("RFCClient.pQuery() - PQuery request successful.");
+    	} else {
+    		if (rsp == null) {
+    			System.out.println("RFCClient.pQuery() - MessageResponse is null from RS");
+    		} else {
+    			System.out.println("RFCClient.pQuery() - MessageResponse failed with reason: " + rsp.getReason());
+    		}
+    	}
     }
     
     private MessageResponse sendToRS(MessageRequest req) {
@@ -141,11 +155,9 @@ public class RFCClient implements Runnable {
     		socket = new Socket(rsHost, rsPort);
     		OutputStream os = socket.getOutputStream();
        		ObjectOutputStream oos = new ObjectOutputStream(os);   
-       		InputStream is = socket.getInputStream();
-    		ObjectInputStream ois = new ObjectInputStream(is);
-    		
     		oos.writeObject(req);
-    		
+    		InputStream is = socket.getInputStream();
+    		ObjectInputStream ois = new ObjectInputStream(is);
     		rsp = (MessageResponse) ois.readObject();
     		
     		oos.close();
