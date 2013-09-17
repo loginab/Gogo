@@ -25,49 +25,49 @@ public class Initialize {
     private final static String RS_PORT_OPT = "rsPort";
     
     @SuppressWarnings("static-access")
-	public static void main(String[] args) {
+    public static void main(String[] args) {
         
-    	/********************************* Parse command line options **********************************/
-    	Option rsIp = OptionBuilder.withArgName(RS_IP_OPT)
-    							   .hasArg()
-					               .withDescription("ip of the registration server")
-					               .isRequired()
-					               .create(RS_IP_OPT);
-    	
-    	Option rsPort = OptionBuilder.withArgName(RS_PORT_OPT)
-						             .hasArg()
-						             .withDescription("port of the registration server")
-						             .isRequired()
-						             .create(RS_PORT_OPT);
-    	
-    	Options options = new Options();
-    	options.addOption(rsIp);
-    	options.addOption(rsPort);
-    	
-    	CommandLineParser parser = new BasicParser();
-    	CommandLine line = null;
+        /********************************* Parse command line options **********************************/
+        Option rsIp = OptionBuilder.withArgName(RS_IP_OPT)
+                                   .hasArg()
+                                   .withDescription("ip of the registration server")
+                                   .isRequired()
+                                   .create(RS_IP_OPT);
+        
+        Option rsPort = OptionBuilder.withArgName(RS_PORT_OPT)
+                                     .hasArg()
+                                     .withDescription("port of the registration server")
+                                     .isRequired()
+                                     .create(RS_PORT_OPT);
+        
+        Options options = new Options();
+        options.addOption(rsIp);
+        options.addOption(rsPort);
+        
+        CommandLineParser parser = new BasicParser();
+        CommandLine line = null;
   
-    	try {
-    		line = parser.parse(options, args);
-    	} catch (ParseException e) {
-    		System.out.println("Initialize.main() - ParseException with message: " + e.getMessage());
-    		e.printStackTrace();
-    		System.exit(1);
-    	}
-    	
-    	String rsHostIpVal = null;
-    	int rsPortVal = -1;
-    	
-    	if (line.hasOption(RS_IP_OPT)) {
-    		rsHostIpVal = line.getOptionValue(RS_IP_OPT);
-    	}
-    	
-    	if (line.hasOption(RS_PORT_OPT)) {
-    		rsPortVal = Integer.parseInt(line.getOptionValue(RS_PORT_OPT));
-    	}
-    	
-    	/********************************* Initialize RFC Server **********************************/
-    	
+        try {
+            line = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println("Initialize.main() - ParseException with message: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+        
+        String rsHostIpVal = null;
+        int rsPortVal = -1;
+        
+        if (line.hasOption(RS_IP_OPT)) {
+            rsHostIpVal = line.getOptionValue(RS_IP_OPT);
+        }
+        
+        if (line.hasOption(RS_PORT_OPT)) {
+            rsPortVal = Integer.parseInt(line.getOptionValue(RS_PORT_OPT));
+        }
+        
+        /********************************* Initialize RFC Server **********************************/
+        
         int serverPort = findServerPort(serverPortStartRange, serverPortEndRange);
         RFCServer server = new RFCServer(serverPort);
         
@@ -76,7 +76,7 @@ public class Initialize {
         } catch (ServerInitFailedException e) {
             System.out.println("Initialize.main() - ServerInitFailedException with message: " + e.getMessage());
             e.printStackTrace();
-    		System.exit(1);
+            System.exit(1);
         }
         
         /********************************* Initialize RFC Client **********************************/
