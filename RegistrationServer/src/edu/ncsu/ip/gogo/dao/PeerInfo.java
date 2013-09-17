@@ -1,7 +1,11 @@
 package edu.ncsu.ip.gogo.dao;
 
-public class PeerInfo {
+import java.io.Serializable;
+
+public class PeerInfo implements Serializable {
 	
+
+	private static final long serialVersionUID = 1L;
 	private	final String hostname;
 	private final int port;
 	
@@ -17,7 +21,4 @@ public class PeerInfo {
 	public int getPort() {
 		return port;
 	}
-	
-
-
 }

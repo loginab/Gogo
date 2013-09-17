@@ -9,7 +9,9 @@ import java.io.*;
 import edu.ncsu.ip.gogo.dao.KeepAliveRequest;
 import edu.ncsu.ip.gogo.dao.LeaveRequest;
 import edu.ncsu.ip.gogo.dao.MessageRequest;
+import edu.ncsu.ip.gogo.dao.MessageResponse;
 import edu.ncsu.ip.gogo.dao.PQueryRequest;
+import edu.ncsu.ip.gogo.dao.PQueryResponse;
 import edu.ncsu.ip.gogo.dao.PeerInfo;
 import edu.ncsu.ip.gogo.dao.RegisterRequest;
 import edu.ncsu.ip.gogo.dao.RegisterResponse;
@@ -18,12 +20,17 @@ import edu.ncsu.ip.gogo.rs.utils.Utils;
 
 public class RegistrationServer {
 
-	private int port;
-	private List<Peer> peerList;
-	private String ipAddress;
-	private int cookieUnique ;
 	private final static String myIp;
 	private final static String myOs;
+	private final int regServerPort;
+	private int cookieSeed ;
+	private final long ttlDecrementInterval = 10000; 	// 10 seconds
+	private final String STATUS_OK = "OK";
+	private final String STATUS_ERROR = "ERROR";
+	private final String version = "P2P-DI-GOGO/1.0";
+	
+	
+	private List<Peer> peerList;
 	
 	static {
 		myIp = Utils.getLocalIpAddress();
@@ -31,230 +38,200 @@ public class RegistrationServer {
 	}
 	
 	public RegistrationServer(int prt, int cookie) {
-		port = prt;
-		cookieUnique = cookie;
-	}
-	
-	public int getCookieUnique() {
-		return cookieUnique;
-	}
-
-	public void setCookieUnique(int cookieUnique) {
-		this.cookieUnique = cookieUnique;
-	}
-
-	public String getIpAddress() {
-		return ipAddress;
-	}
-
-	public void setIpAddress(String ipAddress) {
-		this.ipAddress = ipAddress;
+		regServerPort = prt;
+		cookieSeed = cookie;
 	}
 
 	public void init()  {
+		
 		 peerList = new LinkedList<Peer>();
-		 int val = -1;
+		 startTTLDecrementThread(ttlDecrementInterval);
 		 
-		 Thread t = new Thread() {
-			
-			 public void run() {
-			        while(true) {
-			            try {
-			                Thread.sleep(10*1000);
-			                
-			                for (Peer peer : peerList) { 	
-			         	 		if (peer.getFlag() && peer.getCookie() > 60)
-			         	 			peer.setCookie(peer.getCookie()-60);
-			         	 		else {
-			         	 			peer.setCookie(0);
-			         	 			peer.setFlag(false);
-			         	 		}
-			                
-			         		}
-			            } catch (InterruptedException ie) {
-			            }
-			        }
-			    }
-			 
-			 
-		 };
+		 ServerSocket serverSocket = null;
+		 try {
+			 serverSocket = new ServerSocket(regServerPort);
+		 } catch (IOException e) {
+			 System.out.println("Could not start Registration server on : "+ regServerPort + ". Exiting!");
+			 System.exit(1);
+		 }
 		 
-		 t.start();
+		 System.out.println("RegistrationServer.init() - Started RegistrationServer on port: " + regServerPort + ". Waiting for peer requests ...");
+		 
 		 while (true) {
-			 ServerSocket serverSocket = null;
-			 try {
-				 serverSocket = new ServerSocket(port);
-			 } catch (IOException e) {
-				 System.err.println("Could not listen on port:"+ port);
-				 System.exit(1);
-			 }
-	 
-			 	Socket clientSocket = null;
-			 	try {
-	        	
-			 		clientSocket = serverSocket.accept();
-			 		InputStream is = clientSocket.getInputStream();   
-			 		ObjectInputStream ois = new ObjectInputStream(is);   
-			 		MessageRequest msg = (MessageRequest)ois.readObject();
-	        	   	if(msg instanceof RegisterRequest) {
-	        		
-	        	   		RegisterRequest reg;
-	        	   		reg = (RegisterRequest) msg;
-	        	   		System.out.println(reg.getRfcServerPort());
-	        	   		// returns the index of the peer in the linklist if exist, else returns -1
-	        	   		val = checkIfExist(peerList,reg.getIp(),reg.getRfcServerPort());
-	        		
-	        	   		if (val == -1) {
-	        	   			
-	        	   			// create the object and add the object to the list
-	        	   			cookieUnique++;
-	        			
-	        	   			Peer obj = new Peer(reg.getIp(),getCookieUnique(),true,7200,reg.getRfcServerPort(),1,"Date");
-	        	   			peerList.add(obj);
+			 
+		 	Socket clientSocket = null;
+		 	try {
+		 		clientSocket = serverSocket.accept();
+		 		
+		 		InputStream is = clientSocket.getInputStream();   
+		 		ObjectInputStream ois = new ObjectInputStream(is);   
+		 		MessageRequest msg = (MessageRequest)ois.readObject();
+		 		
+        	   	if(msg instanceof RegisterRequest) {
+        		
+        	   		RegisterRequest reg = (RegisterRequest) msg;
+        	   		System.out.println("Register request from peer with IP: " + reg.getIp() + " and RFC server port: " + reg.getRfcServerPort());
+        	   		
+        	   		Peer peer = findPeerByIpPort(reg.getIp(), reg.getRfcServerPort());
+        		
+        	   		if (peer == null) {
+        	   			peer = new Peer(reg.getIp(), getUniqueCookie(), true, 7200, reg.getRfcServerPort(), 1, new Date());
+        	   			register(peer);
+        	   			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
+        	   			sendResponseToPeer(clientSocket, regResponse);
+        	   		} else {
 
-	        	   			System.out.println("Peer data added");
-	        			
-	        	   			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, reg.getVersion(),
-	        	   					"OK", null, obj.getCookie());
-	        			
-	        	   			OutputStream os = clientSocket.getOutputStream();
-	        	   			ObjectOutputStream oos = new ObjectOutputStream(os);   
-	            		
-	        	   			oos.writeObject(regResponse);
-	        			
-	        	   		} else {
-	
-  	        	   			/* If the object is already there in the peer list change the TTL value
-	        	   			 * check  the number of active peer in last 30 days
-	        	   			 * make the object active
-	        	   			 */
-	        	   			Peer obj = peerList.get(val);
-	        	   			keepAlive(obj);
-	        	   			obj.setFlag(true);
-	        	   			obj.setNumber_active_peer(obj.getNumber_active_peer() + 1);
-	        	   			System.out.println("Peer data modified");
-	        			
-	        	   			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, reg.getVersion(),
-	        	   					"OK", null, obj.getCookie());
-	        			
-	        	   			OutputStream os = clientSocket.getOutputStream();
-	        	   			ObjectOutputStream oos = new ObjectOutputStream(os);   
-	            		
-	        	   			oos.writeObject(regResponse);
-	        	   		}
-		        
-	        		
-	        	   		} else if (msg instanceof LeaveRequest ){
-	        	   			
-	        	   			LeaveRequest leaveObj ;
-	        	   			leaveObj = (LeaveRequest)msg;
-	        	   			Peer rm = checkCookie(peerList,leaveObj.getCookie());
-	        	   			
-	        	   			if (rm != null)
-	        	   				leave(rm);
-	        		
-	        	   		} else if (msg instanceof PQueryRequest) {
-	        	   			
-	        	   			PQueryRequest pqueryObj ;
-	        	   			pqueryObj = (PQueryRequest) msg;
-	        	   			Peer rm = checkCookie(peerList,pqueryObj.getCookie());
-	        	   			
-	        	   			if (rm != null) {
-	        	   				
-	        	   				List<PeerInfo> peerInfo = pquery(peerList);
-	        	   				OutputStream os = clientSocket.getOutputStream();
-	        	   				ObjectOutputStream oos = new ObjectOutputStream(os);   
-	        	   				oos.writeObject(peerInfo);
-	        	   				
-	        	   			} else {
-	        	   				
-	        	   				//TODO if the cookie does not exist 
-	        	   				
-	        	   			}
-	        		
-	        	   		} else if (msg instanceof KeepAliveRequest) {
-	        	   			
-	        	   			KeepAliveRequest keepAliveObj ;
-	        	   			keepAliveObj = (KeepAliveRequest)msg;
-	        			
-	        	   			Peer rm = checkCookie(peerList,keepAliveObj.getCookie());
-	        	   			if (rm !=null)
-	        	   				keepAlive(rm);
-	        	   			else {
-	        	   				//TODO if object for the cookie is not there
-	        	   			}
-	        		
-	        	   		} else {
-	        	   				//TODO 
-	        	   		}
-	        
-	       	 	} catch (IOException e) {
-			 		System.err.println("Accept failed." + e.getMessage());
-			 		e.printStackTrace();
-			 		System.exit(1);
-			 	} catch (Exception e){
-			 		System.err.println("Exception"+e);
-			 	}
-	        
-	        
-	        
+        	   			/* If the object is already there in the peer list change the TTL value
+        	   			 * check  the number of active peer in last 30 days
+        	   			 * make the object active
+        	   			 */
+        	   			keepAlive(peer);
+        	   			peer.setFlag(true);
+        	   			peer.setNumActive(peer.getNumActive() + 1);
+        	   			System.out.println("Peer data modified");
+        	   			RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
+        	   			sendResponseToPeer(clientSocket, regResponse);
+        	   		}
+    	   		} else if (msg instanceof LeaveRequest){
+    	   			
+    	   			LeaveRequest leaveReq = (LeaveRequest)msg;
+    	   			Peer peer = findPeerByCookie(leaveReq.getCookie());
+    	   			MessageResponse leaveRsp;
+    	   			if (peer != null) {
+    	   				leave(peer);
+    	   				leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
+    	   			} else {
+    	   				leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS");
+    	   			}
+    	   			sendResponseToPeer(clientSocket, leaveRsp);
+    		
+    	   		} else if (msg instanceof KeepAliveRequest) {
+    	   			
+    	   			KeepAliveRequest keepAliveReq = (KeepAliveRequest)msg;
+    	   			Peer peer = findPeerByCookie(keepAliveReq.getCookie());
+    	   			MessageResponse keepAliveRsp;
+    	   			
+    	   			if (peer != null) {
+    	   				keepAlive(peer);
+    	   				keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
+    	   			} else {
+    	   				keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS");
+    	   			}
+    	   			sendResponseToPeer(clientSocket, keepAliveRsp);
+    		
+    	   		} else if (msg instanceof PQueryRequest) {
+    	   			
+    	   			PQueryRequest pqueryReq = (PQueryRequest) msg;
+    	   			Peer peer = findPeerByCookie(pqueryReq.getCookie());
+    	   			PQueryResponse pqueryRsp;
+    	   			if (peer != null) {
+    	   				List<PeerInfo> peers = pquery();
+    	   				pqueryRsp = new PQueryResponse(myIp, myOs, version, STATUS_OK, null, peers);
+    	   			} else {
+    	   				pqueryRsp = new PQueryResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS", null);
+    	   			}
+    	   			sendResponseToPeer(clientSocket, pqueryRsp);
+    		
+    	   		} else {
+    	   			MessageResponse invalidMethodRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Request type isn't supported by the registration server!");
+    	   			sendResponseToPeer(clientSocket, invalidMethodRsp);
+    	   		} 
+        
+       	 	} catch (IOException e) {
+		 		System.out.println("Accept failed: " + e.getMessage());
+		 		e.printStackTrace();
+		 	} catch (Exception e){
+		 		System.out.println("Exception: "+e.getMessage());
+		 		e.printStackTrace();
+		 	}
 		 }
 	}
 	
-	
-	/*Check if the given peer has registered in the list or not 
-	 * return -1 if element not in the list
-	 * else return the index of the object in the list 
-	*/
-	public int checkIfExist(List<Peer> prLst,String ipAdd,int prt){
-     	
-     	ListIterator<Peer> listIterator =  prLst.listIterator();
-     	
-     		while (listIterator.hasNext()){
-     			Peer item = listIterator.next();
-	     		if ((item.getHostname()).equals(ipAdd) && (item.getPort() == prt))
-     				return prLst.indexOf(item);
-     		}
+	private void startTTLDecrementThread(final long interval) {
 		
-		return -1;
-     	}
-	/*
-	 *  check for the cookie value in the peer list
-	 *  returns the peer object if present else null
-	 * 
-	 */
-	public Peer checkCookie (List<Peer> prLst, int ckie) {
-		for (Peer peer : prLst) { 	
- 	 		if ((peer.getCookie() == ckie) ) {
- 	 			return peer ;
-     		}
- 		}
-		return null;
+		Thread t = new Thread() {
+			public void run() {
+		        while(true) {
+		            try {
+		                Thread.sleep(interval);
+		                
+		                for (Peer peer : peerList) { 	
+		         	 		if (peer.getFlag() && peer.getTTL() > 60)
+		         	 			peer.setTTL(peer.getTTL()-60);
+		         	 		else {
+		         	 			peer.setTTL(0);
+		         	 			peer.setFlag(false);
+		         	 		}            
+		         		}
+		            } catch (InterruptedException ie) {
+		            	// TODO : Handle this exception
+		            }
+		        }
+			}
+		 };
+		 
+		 t.start();
 	}
+	
+	
+	/* 
+	 * Check if the given peer has registered in the list or not 
+	 * return null if element not in the list
+	 * else return the peer object in the list
+	 */
+	private Peer findPeerByIpPort(String ipAdd, int prt){
+     	
+		for (Peer peer : peerList) {
+     		if (peer.getHostname().equals(ipAdd) && (peer.getPort() == prt)) {
+ 				return peer;
+     		}
+     	}
+		return null;
+    }
+	
+	private Peer findPeerByCookie(int cookie){
+     	
+		for (Peer peer : peerList) {
+     		if (peer.getCookie() == cookie) {
+ 				return peer;
+     		}
+     	}
+		return null;
+    }
+
 	
 	/*
 	 * Add the peer to the linklist
-	*/
-	public void register(Peer p){
-		
-			peerList.add(p);
+	 */
+	private void register(Peer p){
+		peerList.add(p);
 	}
+	
 	/*
 	 * Remove the peer from the linkList
-	*/
+	 */
 	
-	public void leave(Peer p){
-			peerList.remove(p);
+	private void leave(Peer p){
+		peerList.remove(p);
 	}
+	
+	/*
+	 * Set the value of TTL to 7200
+	 * 
+	 */
+	public void keepAlive(Peer p){
+		p.setTTL(7200);
+	}
+	
 	/*
 	 * send the list of active peers
 	 * done by iterating all the registered list of peers
 	*/
-	public List<PeerInfo> pquery(List<Peer> prLst) {
+	private List<PeerInfo> pquery() {
 		
      	ArrayList <PeerInfo> list  = new ArrayList<PeerInfo>();
-     	for (Peer peer : prLst) { 	
- 	 		if ((peer.getFlag() == true) ) {
+     	for (Peer peer : peerList) { 	
+ 	 		if (peer.getFlag()) {
  	 			PeerInfo peerInfo = new PeerInfo(peer.getHostname(), peer.getPort());
      			list.add(peerInfo);
      		}
@@ -262,16 +239,21 @@ public class RegistrationServer {
 		return list ;
 	}
 	
-	/*
-	 * Increase the value of TTL to 7200
-	 * 
-	*/
-	public void keepAlive(Peer p){
+	private int getUniqueCookie() {
 		
-		p.setTTL(7200);
+		return ++cookieSeed;
 	}
-
 	
-	
-
+	private void sendResponseToPeer(Socket clientSocket, MessageResponse rsp) {
+		
+		OutputStream os;
+		try {
+			os = clientSocket.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(os);   
+			oos.writeObject(rsp);
+		} catch (IOException e) {
+			System.out.println("RegistrationServer.sendResponseToPeer() - IOException with message: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 }

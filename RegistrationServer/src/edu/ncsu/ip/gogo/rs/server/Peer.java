@@ -8,19 +8,19 @@ public class Peer {
 	private boolean flag;
 	private int TTL;
 	private int port;
-	private int number_active_peer;
-	private String date;
+	private int numActive;
+	private Date date;
 	
 	
 	public Peer(String hostname, int cookie, boolean flag, int tTL, int port,
-			int number_active_peer, String date) {
+			int number_active_peer, Date date) {
 		super();
 		this.hostname = hostname;
 		this.cookie = cookie;
 		this.flag = flag;
-		TTL = tTL;
+		this.TTL = tTL;
 		this.port = port;
-		this.number_active_peer = number_active_peer;
+		this.numActive = number_active_peer;
 		this.date = date;
 	}
 	public String getHostname() {
@@ -53,18 +53,16 @@ public class Peer {
 	public void setPort(int port) {
 		this.port = port;
 	}
-	public int getNumber_active_peer() {
-		return number_active_peer;
+	public int getNumActive() {
+		return numActive;
 	}
-	public void setNumber_active_peer(int number_active_peer) {
-		this.number_active_peer = number_active_peer;
+	public void setNumActive(int number_active_peer) {
+		this.numActive = number_active_peer;
 	}
-	/*
 	public Date getDate() {
 		return date;
 	}
 	public void setDate(Date date) {
 		this.date = date;
 	}
-*/
 }

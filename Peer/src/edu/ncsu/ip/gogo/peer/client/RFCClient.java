@@ -1,14 +1,13 @@
 package edu.ncsu.ip.gogo.peer.client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Scanner;
 
 import edu.ncsu.ip.gogo.dao.KeepAliveRequest;
@@ -16,6 +15,8 @@ import edu.ncsu.ip.gogo.dao.LeaveRequest;
 import edu.ncsu.ip.gogo.dao.MessageRequest;
 import edu.ncsu.ip.gogo.dao.MessageResponse;
 import edu.ncsu.ip.gogo.dao.PQueryRequest;
+import edu.ncsu.ip.gogo.dao.PQueryResponse;
+import edu.ncsu.ip.gogo.dao.PeerInfo;
 import edu.ncsu.ip.gogo.dao.RegisterRequest;
 import edu.ncsu.ip.gogo.dao.RegisterResponse;
 import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
@@ -81,6 +82,8 @@ public class RFCClient implements Runnable {
             
         } while (userOpt != 7);
         
+        System.out.println("RFCClient.run() - Shutting down peer client ...");
+        
         in.close();
     }
     
@@ -134,10 +137,17 @@ public class RFCClient implements Runnable {
     private void pQuery() {
     	PQueryRequest pQuery = new PQueryRequest(ip, os, version, cookie);
     	
-    	MessageResponse rsp = (MessageResponse) sendToRS(pQuery);
+    	PQueryResponse rsp = (PQueryResponse) sendToRS(pQuery);
     	
     	if (rsp != null && rsp.getStatus().equals("OK")) {
     		System.out.println("RFCClient.pQuery() - PQuery request successful.");
+    		List<PeerInfo> peers = rsp.getActivePeers();
+    		System.out.println("Printing active peer list ...");
+    		for (PeerInfo peer : peers) {
+    			System.out.println("Hostname/IP: " + peer.getHostname());
+    			System.out.println("Port: " + peer.getPort());
+    		}
+    		
     	} else {
     		if (rsp == null) {
     			System.out.println("RFCClient.pQuery() - MessageResponse is null from RS");
