@@ -84,10 +84,12 @@ public class RegistrationServer {
                            /* If the object is already there in the peer list change the TTL value
                             * check  the number of active peer in last 30 days
                             * make the object active
+                            * change date to current time
                             */
                            keepAlive(peer);
                            peer.setFlag(true);
                            peer.setNumActive(peer.getNumActive() + 1);
+                           peer.setDate(new Date());
                            System.out.println("Peer data modified");
                            RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
                            sendResponseToPeer(clientSocket, regResponse);
@@ -208,18 +210,18 @@ public class RegistrationServer {
     }
     
     /*
-     * Remove the peer from the linkList
+     * Set the peer as inactive
      */
     
     private void leave(Peer p){
-        peerList.remove(p);
+        p.setFlag(false);
     }
     
     /*
      * Set the value of TTL to 7200
      * 
      */
-    public void keepAlive(Peer p){
+    private void keepAlive(Peer p){
         p.setTTL(7200);
     }
     
