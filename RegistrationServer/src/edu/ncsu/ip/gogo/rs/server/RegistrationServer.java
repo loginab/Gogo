@@ -215,6 +215,7 @@ public class RegistrationServer {
     
     private void leave(Peer p){
         p.setFlag(false);
+
     }
     
     /*
