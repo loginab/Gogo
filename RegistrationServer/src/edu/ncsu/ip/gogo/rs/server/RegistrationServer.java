@@ -24,7 +24,7 @@ public class RegistrationServer {
     private final static String myOs;
     private final int regServerPort;
     private int cookieSeed ;
-    private final long ttlDecrementInterval = 10000;     // 10 seconds
+    private final long ttlDecrementInterval = 60000;     // 60 seconds
     private final String STATUS_OK = "OK";
     private final String STATUS_ERROR = "ERROR";
     private final String version = "P2P-DI-GOGO/1.0";
@@ -51,7 +51,7 @@ public class RegistrationServer {
          try {
              serverSocket = new ServerSocket(regServerPort);
          } catch (IOException e) {
-             System.out.println("Could not start Registration server on : "+ regServerPort + ". Exiting!");
+             System.out.println("RegistrationServer.init() - Could not start Registration server on : "+ regServerPort + ". Exiting!");
              System.exit(1);
          }
          
@@ -60,25 +60,28 @@ public class RegistrationServer {
          while (true) {
              
              Socket clientSocket = null;
+             InputStream is = null;
+             ObjectInputStream ois = null;
              try {
                  clientSocket = serverSocket.accept();
-                 
-                 InputStream is = clientSocket.getInputStream();   
-                 ObjectInputStream ois = new ObjectInputStream(is);   
+                 is = clientSocket.getInputStream();   
+                 ois = new ObjectInputStream(is);   
                  MessageRequest msg = (MessageRequest)ois.readObject();
                  
                    if(msg instanceof RegisterRequest) {
                 
                        RegisterRequest reg = (RegisterRequest) msg;
-                       System.out.println("Register request from peer with IP: " + reg.getIp() + " and RFC server port: " + reg.getRfcServerPort());
+                       System.out.println("RegistrationServer.init() - Register request from peer with IP: " + reg.getIp() + " and RFC server port: " + reg.getRfcServerPort());
                        
                        Peer peer = findPeerByIpPort(reg.getIp(), reg.getRfcServerPort());
                 
                        if (peer == null) {
                            peer = new Peer(reg.getIp(), getUniqueCookie(), true, 7200, reg.getRfcServerPort(), 1, new Date());
                            register(peer);
+                           System.out.println("RegistrationServer.init() - Registered peer with cookie: " + peer.getCookie());
                            RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
                            sendResponseToPeer(clientSocket, regResponse);
+                           
                        } else {
 
                            /* If the object is already there in the peer list change the TTL value
@@ -90,7 +93,7 @@ public class RegistrationServer {
                            peer.setFlag(true);
                            peer.setNumActive(peer.getNumActive() + 1);
                            peer.setDate(new Date());
-                           System.out.println("Peer data modified");
+                           System.out.println("RegistrationServer.init() - Peer already registered with cookie: " + peer.getCookie());
                            RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
                            sendResponseToPeer(clientSocket, regResponse);
                        }
@@ -139,12 +142,21 @@ public class RegistrationServer {
                        sendResponseToPeer(clientSocket, invalidMethodRsp);
                    } 
         
-                } catch (IOException e) {
-                 System.out.println("Accept failed: " + e.getMessage());
+             } catch (IOException e) {
+                 System.out.println("RegistrationServer.init() - Accept failed with IOException: " + e.getMessage());
                  e.printStackTrace();
              } catch (Exception e){
-                 System.out.println("Exception: "+e.getMessage());
+                 System.out.println("RegistrationServer.init() - Accept failed with Exception: " + e.getMessage());
                  e.printStackTrace();
+             } finally { 
+                 try {
+                     ois.close();
+                     is.close();
+                     clientSocket.close();
+                 } catch (Exception e) {
+                     System.out.println("RegistrationServer.init() - Exception in finally block: " + e.getMessage());
+                     e.printStackTrace();
+                 }
              }
          }
     }
@@ -203,7 +215,7 @@ public class RegistrationServer {
 
     
     /*
-     * Add the peer to the linklist
+     * Add the peer to the linked list
      */
     private void register(Peer p){
         peerList.add(p);
@@ -249,14 +261,23 @@ public class RegistrationServer {
     
     private void sendResponseToPeer(Socket clientSocket, MessageResponse rsp) {
         
-        OutputStream os;
+        OutputStream os = null;
+        ObjectOutputStream oos = null;
         try {
             os = clientSocket.getOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(os);   
+            oos = new ObjectOutputStream(os);   
             oos.writeObject(rsp);
         } catch (IOException e) {
             System.out.println("RegistrationServer.sendResponseToPeer() - IOException with message: " + e.getMessage());
             e.printStackTrace();
+        } finally { 
+            try {
+                oos.close();
+                os.close();
+            } catch (Exception e) {
+                System.out.println("RegistrationServer.sendResponseToPeer() - Exception in finally block: " + e.getMessage());
+                e.printStackTrace();
+            }       
         }
     }
 }

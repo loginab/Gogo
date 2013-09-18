@@ -15,6 +15,7 @@ import org.apache.commons.cli.ParseException;
 import edu.ncsu.ip.gogo.peer.client.RFCClient;
 import edu.ncsu.ip.gogo.peer.common.ServerInitFailedException;
 import edu.ncsu.ip.gogo.peer.server.RFCServer;
+import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
 import edu.ncsu.ip.gogo.peer.utils.ThreadUtils;
 
 public class Initialize {
@@ -23,6 +24,16 @@ public class Initialize {
     private final static int serverPortEndRange = 65500;
     private final static String RS_IP_OPT = "rsIp";
     private final static String RS_PORT_OPT = "rsPort";
+    
+    public final static String myIp;
+    public final static String myOs;
+    public final static String version;
+    
+    static {
+        myIp = ClientUtils.getLocalIpAddress();
+        myOs = ClientUtils.getOS();
+        version = "P2P-DI-GOGO/1.0";
+    }
     
     @SuppressWarnings("static-access")
     public static void main(String[] args) {

@@ -19,16 +19,14 @@ import edu.ncsu.ip.gogo.dao.PQueryResponse;
 import edu.ncsu.ip.gogo.dao.PeerInfo;
 import edu.ncsu.ip.gogo.dao.RegisterRequest;
 import edu.ncsu.ip.gogo.dao.RegisterResponse;
-import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
+import edu.ncsu.ip.gogo.peer.common.Constants;
+import edu.ncsu.ip.gogo.peer.main.Initialize;
 
 public class RFCClient implements Runnable {
     
     private final String rsHost;
     private final int rsPort;
     private final int rfcServerPort;
-    private final String ip;
-    private final String os;
-    private final String version;
     
     private int cookie;
     
@@ -38,9 +36,6 @@ public class RFCClient implements Runnable {
         this.rsHost = rsHost;
         this.rsPort = rsPort;
         this.rfcServerPort = rfcServerPort;
-        this.ip = ClientUtils.getLocalIpAddress();
-        this.os = ClientUtils.getOS();
-        this.version = "P2P-DI-GOGO/1.0";
     }
 
     @Override
@@ -88,10 +83,10 @@ public class RFCClient implements Runnable {
     }
     
     private void register() {
-        RegisterRequest reg = new RegisterRequest(ip, os, version, rfcServerPort);
+        RegisterRequest reg = new RegisterRequest(Initialize.myIp, Initialize.myOs, Initialize.version, rfcServerPort);
         MessageResponse rsp = (MessageResponse) sendToRS(reg);
         
-        if (rsp != null && rsp.getStatus().equals("OK")) {
+        if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             RegisterResponse response = (RegisterResponse) rsp;
             setCookie(response.getCookie());
             System.out.println("RFCClient.register() - Register request successful. RS assigned cookie: " + getCookie());
@@ -105,10 +100,10 @@ public class RFCClient implements Runnable {
     }
     
     private void leave() {
-        LeaveRequest leave = new LeaveRequest(ip, os, version, cookie);
+        LeaveRequest leave = new LeaveRequest(Initialize.myIp, Initialize.myOs, Initialize.version, cookie);
         MessageResponse rsp = (MessageResponse) sendToRS(leave);
         
-        if (rsp != null && rsp.getStatus().equals("OK")) {
+        if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             System.out.println("RFCClient.leave() - Leave request successful.");
         } else {
             if (rsp == null) {
@@ -120,10 +115,10 @@ public class RFCClient implements Runnable {
     }
     
     private void keepAlive() {
-        KeepAliveRequest keepAlive = new KeepAliveRequest(ip, os, version, cookie);
+        KeepAliveRequest keepAlive = new KeepAliveRequest(Initialize.myIp, Initialize.myOs, Initialize.version, cookie);
         MessageResponse rsp = (MessageResponse) sendToRS(keepAlive);
         
-        if (rsp != null && rsp.getStatus().equals("OK")) {
+        if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             System.out.println("RFCClient.keepAlive() - Keep Alive request successful.");
         } else {
             if (rsp == null) {
@@ -135,11 +130,11 @@ public class RFCClient implements Runnable {
     }
     
     private void pQuery() {
-        PQueryRequest pQuery = new PQueryRequest(ip, os, version, cookie);
+        PQueryRequest pQuery = new PQueryRequest(Initialize.myIp, Initialize.myOs, Initialize.version, cookie);
         
         PQueryResponse rsp = (PQueryResponse) sendToRS(pQuery);
         
-        if (rsp != null && rsp.getStatus().equals("OK")) {
+        if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             System.out.println("RFCClient.pQuery() - PQuery request successful.");
             List<PeerInfo> peers = rsp.getActivePeers();
             System.out.println("Printing active peer list ...");
@@ -158,23 +153,22 @@ public class RFCClient implements Runnable {
     }
     
     private MessageResponse sendToRS(MessageRequest req) {
-        Socket socket;
+        Socket socket = null;
+        OutputStream os = null;
+        ObjectOutputStream oos = null;
+        InputStream is = null;
+        ObjectInputStream ois = null;
         MessageResponse rsp = null;
         System.out.println("Opening TCP socket to " + rsHost + " and " + rsPort);
+        
         try {
             socket = new Socket(rsHost, rsPort);
-            OutputStream os = socket.getOutputStream();
-               ObjectOutputStream oos = new ObjectOutputStream(os);   
+            os = socket.getOutputStream();
+            oos = new ObjectOutputStream(os);   
             oos.writeObject(req);
-            InputStream is = socket.getInputStream();
-            ObjectInputStream ois = new ObjectInputStream(is);
+            is = socket.getInputStream();
+            ois = new ObjectInputStream(is);
             rsp = (MessageResponse) ois.readObject();
-            
-            oos.close();
-            os.close();
-            is.close();
-            ois.close();
-            socket.close();
         } catch (UnknownHostException e) {
             System.out.println("RFCClient.sendToRS() - UnknownHostException with message: " + e.getMessage());
             e.printStackTrace();
@@ -184,6 +178,17 @@ public class RFCClient implements Runnable {
         } catch (ClassNotFoundException e) {
             System.out.println("RFCClient.sendToRS() - ClassNotFoundException with message: " + e.getMessage());
             e.printStackTrace();
+        } finally { 
+            try {
+                oos.close();
+                os.close();
+                is.close();
+                ois.close();
+                socket.close();
+            } catch (Exception e) {
+                System.out.println("RFCClient.sendToRS() - Exception in finally block: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
         
         return rsp;
@@ -193,7 +198,7 @@ public class RFCClient implements Runnable {
         return cookie;
     }
 
-    public void setCookie(int cookie) {
+    private void setCookie(int cookie) {
         this.cookie = cookie;
     }    
 }
