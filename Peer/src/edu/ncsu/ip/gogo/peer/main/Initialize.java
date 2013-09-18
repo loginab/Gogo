@@ -13,7 +13,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import edu.ncsu.ip.gogo.peer.client.RFCClient;
-import edu.ncsu.ip.gogo.peer.common.ServerInitFailedException;
 import edu.ncsu.ip.gogo.peer.server.RFCServer;
 import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
 import edu.ncsu.ip.gogo.peer.utils.ThreadUtils;
@@ -81,14 +80,7 @@ public class Initialize {
         
         int serverPort = findServerPort(serverPortStartRange, serverPortEndRange);
         RFCServer server = new RFCServer(serverPort);
-        
-        try{    
-            server.init();
-        } catch (ServerInitFailedException e) {
-            System.out.println("Initialize.main() - ServerInitFailedException with message: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
-        }
+        server.run();
         
         /********************************* Initialize RFC Client **********************************/
         

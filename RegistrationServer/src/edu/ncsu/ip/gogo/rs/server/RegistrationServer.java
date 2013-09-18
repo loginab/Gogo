@@ -55,7 +55,8 @@ public class RegistrationServer {
              System.exit(1);
          }
          
-         System.out.println("RegistrationServer.init() - Started RegistrationServer on port: " + regServerPort + ". Waiting for peer requests ...");
+         System.out.println("RegistrationServer.init() - Started RegistrationServer on IP:  " +myIp +  " and port: " + regServerPort + 
+                 ". Waiting for peer requests ...");
          
          while (true) {
              

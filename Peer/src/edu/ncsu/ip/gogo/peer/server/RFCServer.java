@@ -7,11 +7,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import edu.ncsu.ip.gogo.dao.MessageRequest;
-import edu.ncsu.ip.gogo.peer.common.ServerInitFailedException;
 import edu.ncsu.ip.gogo.peer.handler.PeerRequestHandler;
 
 
-public class RFCServer {
+public class RFCServer implements Runnable {
     
     private int rfcServerPort;
 
@@ -20,17 +19,18 @@ public class RFCServer {
     }
 
 
-    public void init() throws ServerInitFailedException {
+    public void run() {
         // Read local RFCs and initialize RFC index
         
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(rfcServerPort);
         } catch (IOException e) {
-            throw new ServerInitFailedException(e);
+            System.out.println("RFCServer.run() - Could not start RFC server on : "+ rfcServerPort + ". Exiting!");
+            System.exit(1);
         }
         
-        System.out.println("RFCServer.init() - Started RfCServer on port: " + rfcServerPort + ". Waiting for peer requests ...");
+        System.out.println("RFCServer.run() - Started RfCServer on port: " + rfcServerPort + ". Waiting for peer requests ...");
         
         
         while (true) {
@@ -46,10 +46,10 @@ public class RFCServer {
                 PeerRequestHandler handler = new PeerRequestHandler(clientSocket, msg);
                 handler.run();
             } catch (IOException e) {
-                System.out.println("RFCServer.init() - Accept failed with IOException: " + e.getMessage());
+                System.out.println("RFCServer.run() - Accept failed with IOException: " + e.getMessage());
                 e.printStackTrace();
             } catch (Exception e){
-                System.out.println("RFCServer.init() - Accept failed with Exception: " + e.getMessage());
+                System.out.println("RFCServer.run() - Accept failed with Exception: " + e.getMessage());
                 e.printStackTrace();
             } finally { 
                 try {
@@ -57,7 +57,7 @@ public class RFCServer {
                     is.close();
                     clientSocket.close();
                 } catch (Exception e) {
-                    System.out.println("RFCServer.init() - Exception in finally block: " + e.getMessage());
+                    System.out.println("RFCServer.run() - Exception in finally block: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
