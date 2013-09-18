@@ -103,11 +103,11 @@ public class RegistrationServer {
                        LeaveRequest leaveReq = (LeaveRequest)msg;
                        Peer peer = findPeerByCookie(leaveReq.getCookie());
                        MessageResponse leaveRsp;
-                       if (peer != null) {
+                       if (peer != null && peer.getFlag()) {
                            leave(peer);
                            leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
                        } else {
-                           leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS");
+                           leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer inactive or not registered with RS");
                        }
                        sendResponseToPeer(clientSocket, leaveRsp);
             
@@ -117,11 +117,11 @@ public class RegistrationServer {
                        Peer peer = findPeerByCookie(keepAliveReq.getCookie());
                        MessageResponse keepAliveRsp;
                        
-                       if (peer != null) {
+                       if (peer != null && peer.getFlag()) {
                            keepAlive(peer);
                            keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
                        } else {
-                           keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS");
+                           keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_ERROR, "Peer inactive or registered with RS");
                        }
                        sendResponseToPeer(clientSocket, keepAliveRsp);
             
@@ -130,11 +130,11 @@ public class RegistrationServer {
                        PQueryRequest pqueryReq = (PQueryRequest) msg;
                        Peer peer = findPeerByCookie(pqueryReq.getCookie());
                        PQueryResponse pqueryRsp;
-                       if (peer != null) {
+                       if (peer != null && peer.getFlag()) {
                            List<PeerInfo> peers = pquery();
                            pqueryRsp = new PQueryResponse(myIp, myOs, version, STATUS_OK, null, peers);
                        } else {
-                           pqueryRsp = new PQueryResponse(myIp, myOs, version, STATUS_ERROR, "Peer not registered with RS", null);
+                           pqueryRsp = new PQueryResponse(myIp, myOs, version, STATUS_ERROR, "Peer inactive or registered with RS", null);
                        }
                        sendResponseToPeer(clientSocket, pqueryRsp);
             

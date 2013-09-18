@@ -79,8 +79,8 @@ public class Initialize {
         /********************************* Initialize RFC Server **********************************/
         
         int serverPort = findServerPort(serverPortStartRange, serverPortEndRange);
-        RFCServer server = new RFCServer(serverPort);
-        server.run();
+        Thread serverThread = new Thread(new RFCServer(serverPort));
+        serverThread.start();
         
         /********************************* Initialize RFC Client **********************************/
         
