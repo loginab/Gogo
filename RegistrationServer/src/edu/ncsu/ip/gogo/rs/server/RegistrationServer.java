@@ -77,7 +77,7 @@ public class RegistrationServer {
                        Peer peer = findPeerByIpPort(reg.getIp(), reg.getRfcServerPort());
                 
                        if (peer == null) {
-                           peer = new Peer(reg.getIp(), getUniqueCookie(), true, 7200, reg.getRfcServerPort(), 1, new Date());
+                           peer = new Peer(reg.getIp(), getUniqueCookie(), true, 120, reg.getRfcServerPort(), 1, new Date());
                            register(peer);
                            System.out.println("RegistrationServer.init() - Registered peer with cookie: " + peer.getCookie());
                            RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
@@ -104,6 +104,7 @@ public class RegistrationServer {
                        Peer peer = findPeerByCookie(leaveReq.getCookie());
                        MessageResponse leaveRsp;
                        if (peer != null && peer.getFlag()) {
+                           System.out.println("RegistrationServer.leave() - Making the peer inactive with IP: "+peer.getHostname() +" and RFC server port: "+peer.getPort());
                            leave(peer);
                            leaveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
                        } else {
@@ -118,6 +119,7 @@ public class RegistrationServer {
                        MessageResponse keepAliveRsp;
                        
                        if (peer != null && peer.getFlag()) {
+                           System.out.println("RegistrationServer.keepAlive() - Making the peer alive with IP: "+peer.getHostname() +" and RFC server port: "+peer.getPort());
                            keepAlive(peer);
                            keepAliveRsp = new MessageResponse(myIp, myOs, version, STATUS_OK, null);
                        } else {
@@ -171,11 +173,14 @@ public class RegistrationServer {
                         Thread.sleep(interval);
                         
                         for (Peer peer : peerList) {     
-                              if (peer.getFlag() && peer.getTTL() > 60)
+                              if (peer.getFlag() && peer.getTTL() > 60) {
+                                  System.out.println("RegistrationServer.startTTLDecrementThread() - TTL decrement for IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
                                   peer.setTTL(peer.getTTL()-60);
-                              else {
+                              }
+                              else if (peer.getFlag()){
                                   peer.setTTL(0);
                                   peer.setFlag(false);
+                                  System.out.println("RegistrationServer.startTTLDecrementThread() - Making peer inactive with IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
                               }            
                          }
                     } catch (InterruptedException ie) {
@@ -227,6 +232,7 @@ public class RegistrationServer {
      */
     
     private void leave(Peer p){
+        
         p.setFlag(false);
 
     }
@@ -236,7 +242,7 @@ public class RegistrationServer {
      * 
      */
     private void keepAlive(Peer p){
-        p.setTTL(7200);
+        p.setTTL(120);
     }
     
     /*
