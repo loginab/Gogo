@@ -3,6 +3,7 @@ package edu.ncsu.ip.gogo.peer.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -26,7 +27,7 @@ public class ClientUtils {
                 List<InterfaceAddress> iAddrs = ni.getInterfaceAddresses();
                 
                 for (InterfaceAddress iAddr : iAddrs) {
-                    if (iAddr.getAddress().isLinkLocalAddress()) {
+                    if (iAddr.getAddress().isLinkLocalAddress() || !iAddr.getAddress().getHostAddress().matches("[0-9|.]+")) {
                         continue;
                     }
                     ip = iAddr.getAddress().getHostAddress();
@@ -52,4 +53,16 @@ public class ClientUtils {
             out.write(buf, 0, len);
         }
     }
+    
+    public static void printIaddr(InetAddress iAddr) {
+        System.out.println("getHostAddress: " + iAddr.getHostAddress());
+        System.out.println("isLinkLocalAddress: " + iAddr.isLinkLocalAddress());
+        System.out.println("isMCGlobal: " + iAddr.isMCGlobal());
+        System.out.println("isMCNodeLocal: " + iAddr.isMCNodeLocal());
+        System.out.println("isMCLinkLocal: " + iAddr.isMCLinkLocal());
+        System.out.println("isMac: " + !iAddr.getHostAddress().matches("[0-9|.]+"));
+        
+        
+    }
+    
 }

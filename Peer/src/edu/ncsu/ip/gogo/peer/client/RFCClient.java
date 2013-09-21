@@ -3,7 +3,6 @@ package edu.ncsu.ip.gogo.peer.client;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -88,6 +87,7 @@ public class RFCClient implements Runnable {
                   
                 case 7 : printRfcIndex();
                          break;
+                        
             }
             
         } while (userOpt != 15);
@@ -175,7 +175,7 @@ public class RFCClient implements Runnable {
         RFCQueryResponse response = (RFCQueryResponse) send(rfcQueryRequest, peerIp, rfcServerPort);
         
         if (response != null && response.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
-            RFCIndex.getInstance().mergeRfcIndex(response.getRfcIndex());
+            RFCIndex.getInstance().mergeRfcIndex(response.getRfcIndex(), peerIp, rfcServerPort);
             System.out.println("RFCClient.rfcQuery() - RFC Query request successful. Print RFC index?(Y/N)");
             if (in.next().equals("Y")) {
                 RFCIndex.getInstance().printRfcIndex();
@@ -249,12 +249,10 @@ public class RFCClient implements Runnable {
         }
     }
     
-    
     private void printRfcIndex() {
         RFCIndex.getInstance().printRfcIndex();
     }
-    
-    
+
     private MessageResponse sendToRS(MessageRequest req) {
         return send(req, rsHost, rsPort);
     }

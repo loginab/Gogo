@@ -61,8 +61,17 @@ public final class RFCIndex {
     }
     
     
-    public void mergeRfcIndex(Queue<RFC> peerRfcIndex) {
-        rfcs.addAll(peerRfcIndex);
+    public void mergeRfcIndex(Queue<RFC> peerRfcIndex, String peerIp, int rfcServerPort) {
+        for (RFC rfc : peerRfcIndex) {
+            RFC entry = null;
+            if (rfc.getPeerIp().equals(peerIp)) {
+                entry = new RFC(rfc.getRfcNumber(), rfc.getFilename(), rfc.getLastModified(), rfc.getLength(),
+                    peerIp, rfcServerPort);
+            } else {
+                entry = rfc;
+            }
+            rfcs.add(entry);
+        }
     }
     
     
