@@ -1,8 +1,6 @@
 package edu.ncsu.ip.gogo.peer.main;
 
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -15,7 +13,6 @@ import org.apache.commons.cli.ParseException;
 import edu.ncsu.ip.gogo.peer.client.RFCClient;
 import edu.ncsu.ip.gogo.peer.server.RFCServer;
 import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
-import edu.ncsu.ip.gogo.peer.utils.ThreadUtils;
 
 public class Initialize {
 
@@ -27,7 +24,7 @@ public class Initialize {
     public final static String myIp;
     public final static String myOs;
     public final static String version;
-    
+        
     static {
         myIp = ClientUtils.getLocalIpAddress();
         myOs = ClientUtils.getOS();
@@ -76,6 +73,8 @@ public class Initialize {
             rsPortVal = Integer.parseInt(line.getOptionValue(RS_PORT_OPT));
         }
         
+
+        
         /********************************* Initialize RFC Server **********************************/
         
         int serverPort = findServerPort(serverPortStartRange, serverPortEndRange);
@@ -85,9 +84,11 @@ public class Initialize {
         /********************************* Initialize RFC Client **********************************/
         
         RFCClient client = new RFCClient(rsHostIpVal, rsPortVal, serverPort);
-        ExecutorService clientExec = Executors.newSingleThreadExecutor();
-        clientExec.execute(client);
-        ThreadUtils.shutdownAndAwaitTermination(clientExec);
+        Thread clientThread = new Thread(client);
+        clientThread.start();
+        //ExecutorService clientExec = Executors.newSingleThreadExecutor();
+        //clientExec.execute(client);
+        //ThreadUtils.shutdownAndAwaitTermination(clientExec);
         
     }
     

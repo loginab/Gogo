@@ -1,5 +1,8 @@
 package edu.ncsu.ip.gogo.peer.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -42,4 +45,11 @@ public class ClientUtils {
         return System.getProperty("os.name");
     }
 
+    public static void copy(InputStream in, OutputStream out) throws IOException {
+        byte[] buf = new byte[8192];
+        int len = 0;
+        while ((len = in.read(buf)) != -1) {
+            out.write(buf, 0, len);
+        }
+    }
 }

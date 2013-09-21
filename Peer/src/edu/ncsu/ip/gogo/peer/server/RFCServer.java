@@ -18,9 +18,7 @@ public class RFCServer implements Runnable {
         this.rfcServerPort = port;
     }
 
-
     public void run() {
-        // Read local RFCs and initialize RFC index
         
         ServerSocket serverSocket = null;
         try {
@@ -32,7 +30,6 @@ public class RFCServer implements Runnable {
         
         System.out.println("RFCServer.run() - Started RfCServer on port: " + rfcServerPort + ". Waiting for peer requests ...");
         
-        
         while (true) {
             Socket clientSocket = null;
             InputStream is = null;
@@ -42,9 +39,9 @@ public class RFCServer implements Runnable {
                 is = clientSocket.getInputStream();   
                 ois = new ObjectInputStream(is);
                 MessageRequest msg = (MessageRequest)ois.readObject();
-                
                 PeerRequestHandler handler = new PeerRequestHandler(clientSocket, msg);
-                handler.run();
+                Thread handlerThread = new Thread(handler);
+                handlerThread.start();
             } catch (IOException e) {
                 System.out.println("RFCServer.run() - Accept failed with IOException: " + e.getMessage());
                 e.printStackTrace();
@@ -55,7 +52,6 @@ public class RFCServer implements Runnable {
                 try {
                     ois.close();
                     is.close();
-                    clientSocket.close();
                 } catch (Exception e) {
                     System.out.println("RFCServer.run() - Exception in finally block: " + e.getMessage());
                     e.printStackTrace();
@@ -64,5 +60,4 @@ public class RFCServer implements Runnable {
                 
         }
     }
-
 }
