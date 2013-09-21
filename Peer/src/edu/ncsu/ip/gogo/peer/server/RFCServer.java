@@ -29,11 +29,11 @@ public class RFCServer implements Runnable {
         }
         
         System.out.println("RFCServer.run() - Started RfCServer on port: " + rfcServerPort + ". Waiting for peer requests ...");
+        Socket clientSocket = null;
+        InputStream is = null;
+        ObjectInputStream ois = null;
         
         while (true) {
-            Socket clientSocket = null;
-            InputStream is = null;
-            ObjectInputStream ois = null;
             try {
                 clientSocket = serverSocket.accept();
                 is = clientSocket.getInputStream();   
@@ -50,8 +50,8 @@ public class RFCServer implements Runnable {
                 e.printStackTrace();
             } finally { 
                 try {
-                    ois.close();
-                    is.close();
+                   // ois.close();
+                   // is.close();
                 } catch (Exception e) {
                     System.out.println("RFCServer.run() - Exception in finally block: " + e.getMessage());
                     e.printStackTrace();
