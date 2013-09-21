@@ -7,6 +7,7 @@ import java.util.Enumeration;
 import java.util.List;
 
 public class Utils {
+
     public static String getLocalIpAddress() {
         String ip = null;
         Enumeration<NetworkInterface> netInfs = null;
@@ -22,7 +23,7 @@ public class Utils {
                 List<InterfaceAddress> iAddrs = ni.getInterfaceAddresses();
                 
                 for (InterfaceAddress iAddr : iAddrs) {
-                    if (iAddr.getAddress().isLinkLocalAddress()) {
+                    if (iAddr.getAddress().isLinkLocalAddress() || !iAddr.getAddress().getHostAddress().matches("[0-9|.]+")) {
                         continue;
                     }
                     ip = iAddr.getAddress().getHostAddress();
@@ -30,6 +31,7 @@ public class Utils {
                 }
             }
         } catch (SocketException e) {
+            System.out.println("Utils.getLocalIpAddress() - SocketException with message: " + e.getMessage());
             e.printStackTrace();
         }
         

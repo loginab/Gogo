@@ -28,6 +28,7 @@ public class RegistrationServer {
     private final String STATUS_OK = "OK";
     private final String STATUS_ERROR = "ERROR";
     private final String version = "P2P-DI-GOGO/1.0";
+    private final int initialPeerTTL = 7200;     // 7200 seconds
     
     
     private List<Peer> peerList;
@@ -77,7 +78,7 @@ public class RegistrationServer {
                        Peer peer = findPeerByIpPort(reg.getIp(), reg.getRfcServerPort());
                 
                        if (peer == null) {
-                           peer = new Peer(reg.getIp(), getUniqueCookie(), true, 120, reg.getRfcServerPort(), 1, new Date());
+                           peer = new Peer(reg.getIp(), getUniqueCookie(), true, initialPeerTTL, reg.getRfcServerPort(), 1, new Date());
                            register(peer);
                            System.out.println("RegistrationServer.init() - Registered peer with cookie: " + peer.getCookie());
                            RegisterResponse regResponse = new RegisterResponse(myIp, myOs, version, STATUS_OK, null, peer.getCookie());
@@ -242,7 +243,7 @@ public class RegistrationServer {
      * 
      */
     private void keepAlive(Peer p){
-        p.setTTL(120);
+        p.setTTL(initialPeerTTL);
     }
     
     /*
