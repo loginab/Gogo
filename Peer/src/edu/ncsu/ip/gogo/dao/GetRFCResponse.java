@@ -1,18 +1,17 @@
 package edu.ncsu.ip.gogo.dao;
 
-import java.io.InputStream;
 
 public class GetRFCResponse extends MessageResponse {
 
     private static final long serialVersionUID = 1L;
     
-    private final InputStream rfcContent;
+    private final byte[] rfcContent;
     private final String filename;
     private final long lastModified;
     private final long length;
     
     public GetRFCResponse(String ip, String os, String version, String status,
-            String reason, InputStream rfcContent, String filename,
+            String reason, byte[] rfcContent, String filename,
             long lastModified, long length) {
         super(ip, os, version, status, reason);
         this.rfcContent = rfcContent;
@@ -21,7 +20,7 @@ public class GetRFCResponse extends MessageResponse {
         this.length = length;
     }
 
-    public InputStream getRfcContent() {
+    public byte[] getRfcContent() {
         return rfcContent;
     }
 

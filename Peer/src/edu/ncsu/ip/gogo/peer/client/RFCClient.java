@@ -1,5 +1,6 @@
 package edu.ncsu.ip.gogo.peer.client;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,6 +11,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Scanner;
+
+import org.apache.commons.io.IOUtils;
 
 import edu.ncsu.ip.gogo.dao.GetRFCRequest;
 import edu.ncsu.ip.gogo.dao.GetRFCResponse;
@@ -28,7 +31,6 @@ import edu.ncsu.ip.gogo.dao.RegisterResponse;
 import edu.ncsu.ip.gogo.peer.common.Constants;
 import edu.ncsu.ip.gogo.peer.common.RFCIndex;
 import edu.ncsu.ip.gogo.peer.main.Initialize;
-import edu.ncsu.ip.gogo.peer.utils.ClientUtils;
 
 public class RFCClient implements Runnable {
     
@@ -152,7 +154,11 @@ public class RFCClient implements Runnable {
             System.out.println("Printing active peer list ...");
             int peerCount = 1;
             for (PeerInfo peer : peers) {
-                System.out.println("Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                if (peer.getHostname().equals(Initialize.myIp)) {
+                    System.out.println("(SELF) Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                } else {
+                    System.out.println("Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                }
                 peerCount++;
             }
             
@@ -177,7 +183,7 @@ public class RFCClient implements Runnable {
         if (response != null && response.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             RFCIndex.getInstance().mergeRfcIndex(response.getRfcIndex(), peerIp, rfcServerPort);
             System.out.println("RFCClient.rfcQuery() - RFC Query request successful. Print RFC index?(Y/N)");
-            if (in.next().equals("Y")) {
+            if (in.next().equalsIgnoreCase("Y")) {
                 RFCIndex.getInstance().printRfcIndex();
             }
         } else {
@@ -200,14 +206,14 @@ public class RFCClient implements Runnable {
         if (rfc == null) {
             System.out.println("RFCClient.getRfc() - Rfc number " + rfcNumber + " doesn't exist in the index!");
             System.out.println("Print RFC index?(Y/N)");
-            if (in.next().equals("Y")) {
+            if (in.next().equalsIgnoreCase("Y")) {
                 RFCIndex.getInstance().printRfcIndex();
             }
             
         } else if (rfc.getPeerRfcServerPort() == -1) {
             System.out.println("RFCClient.getRfc() - Rfc number " + rfcNumber + " is available locally in rfc directory!");
             System.out.println("Print RFC index?(Y/N)");
-            if (in.next().equals("Y")) {
+            if (in.next().equalsIgnoreCase("Y")) {
                 RFCIndex.getInstance().printRfcIndex();
             }
         } else {
@@ -221,7 +227,10 @@ public class RFCClient implements Runnable {
                 OutputStream out = null;
                 try {
                     out = new FileOutputStream(filename);
-                    ClientUtils.copy(response.getRfcContent(), out);
+                    IOUtils.write(response.getRfcContent(), out);
+                    File rfcFile = new File(filename);
+                    System.out.println("Does File exist? " + rfcFile.exists());
+                    
                     RFC localRfc = new RFC(rfcNumber, response.getFilename(), response.getLastModified(), response.getLength(), Initialize.myIp, -1);
                     RFCIndex.getInstance().addRfcToIndex(localRfc);
                 } catch (FileNotFoundException e) {
@@ -259,40 +268,38 @@ public class RFCClient implements Runnable {
     
     private MessageResponse send(MessageRequest req, String host, int port) {
         Socket socket = null;
-        //OutputStream os = null;
         ObjectOutputStream oos = null;
-        //InputStream is = null;
         ObjectInputStream ois = null;
         MessageResponse rsp = null;
         System.out.println("Opening TCP socket to " + host + " and " + port);
         
         try {
             socket = new Socket(host, port);
-            //os = socket.getOutputStream();
             oos = new ObjectOutputStream(socket.getOutputStream());   
             oos.writeObject(req);
             oos.flush();
-            //is = socket.getInputStream();
             ois = new ObjectInputStream(socket.getInputStream());
             rsp = (MessageResponse) ois.readObject();
         } catch (UnknownHostException e) {
             System.out.println("RFCClient.send() - UnknownHostException with message: " + e.getMessage());
             e.printStackTrace();
         } catch (IOException e) {
-            System.out.println("RFCClient.send() - IOException with message: " + e.getMessage());
-            e.printStackTrace();
+            if (e.getMessage().equals("Connection refused")) {
+                System.out.println("Unable to connect to host: " + host + ", port: " + port + ". Connection refused");
+            } else{
+                System.out.println("RFCClient.send() - IOException with message: " + e.getMessage());
+                e.printStackTrace();
+            }
         } catch (ClassNotFoundException e) {
             System.out.println("RFCClient.send() - ClassNotFoundException with message: " + e.getMessage());
             e.printStackTrace();
         } finally { 
             try {
                 oos.close();
-                //os.close();
-                //is.close();
                 ois.close();
                 socket.close();
             } catch (Exception e) {
-                System.out.println("RFCClient.send() - Exception in finally block: " + e.getMessage());
+                //System.out.println("RFCClient.send() - Exception in finally block: " + e.getMessage());
             }
         }
         

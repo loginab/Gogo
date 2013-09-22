@@ -1,12 +1,12 @@
 package edu.ncsu.ip.gogo.peer.handler;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+
+import org.apache.commons.io.IOUtils;
 
 import edu.ncsu.ip.gogo.dao.GetRFCRequest;
 import edu.ncsu.ip.gogo.dao.GetRFCResponse;
@@ -48,11 +48,11 @@ public class PeerRequestHandler implements Runnable {
                 sendResponseToPeer(clientSocket, rfcDoesntExist);
             } else {
                 String filename = RFCIndex.getRfcFileNameFromNumber(rfc.getRfcNumber());
-                InputStream content = null;
+                byte[] content = null;
                 try {
-                    content = new FileInputStream(filename);
-                } catch (FileNotFoundException e) {
-                    System.out.println("PeerRequestHandler.run() - FileNotFoundException with message: " + e.getMessage());
+                    content = IOUtils.toByteArray(new FileInputStream(filename));
+                } catch (IOException e) {
+                    System.out.println("PeerRequestHandler.run() - IOException with message: " + e.getMessage());
                     e.printStackTrace();
                     // TODO: return message response with error and reason
                 }
@@ -75,7 +75,7 @@ public class PeerRequestHandler implements Runnable {
 
     }
     
-    
+
     private void sendResponseToPeer(Socket clientSocket, MessageResponse rsp) {
         
         OutputStream os = null;
@@ -85,15 +85,19 @@ public class PeerRequestHandler implements Runnable {
             oos = new ObjectOutputStream(os);   
             oos.writeObject(rsp);
         } catch (IOException e) {
-            System.out.println("PeerRequestHandler.sendResponseToPeer() - IOException with message: " + e.getMessage());
-            e.printStackTrace();
+            if (e.getMessage().equals("Connection refused")) {
+                System.out.println("Unable to connect to peer. Connection refused");
+            } else{
+                System.out.println("PeerRequestHandler.sendResponseToPeer() - IOException with message: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
         } finally { 
             try {
                 oos.close();
                 os.close();
             } catch (Exception e) {
                 System.out.println("PeerRequestHandler.sendResponseToPeer() - Exception in finally block: " + e.getMessage());
-                //e.printStackTrace();
             }       
         }
     }

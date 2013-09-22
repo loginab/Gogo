@@ -52,7 +52,8 @@ public final class RFCIndex {
             if (rfc.getPeerRfcServerPort() == -1) {
                 printMessage = rfcCount + ". Rfc number: " + rfc.getRfcNumber() + " isLocal = Yes, Filename: " + rfc.getFilename();
             } else {
-                printMessage = rfcCount + ". Rfc number: " + rfc.getRfcNumber() + " isLocal = No, Peer IP: " + rfc.getPeerIp() + " , Peer RFC Server Port: " + rfc.getPeerRfcServerPort() + "Filename: " + rfc.getFilename();
+                printMessage = rfcCount + ". Rfc number: " + rfc.getRfcNumber() + " isLocal = No, Peer IP: " + rfc.getPeerIp() + " , Peer RFC Server Port: " 
+                                + rfc.getPeerRfcServerPort() + " , Filename: " + rfc.getFilename();
             }
             
             System.out.println(printMessage);
@@ -105,7 +106,6 @@ public final class RFCIndex {
             rfcs.add(rfc);
         }
     }
-    
     
     public static String getRfcFileNameFromNumber(String rfcNumber) {
         return relativeRfcDirPath + "/" + rfcFileNameStart + rfcNumber + rfcFileNameEnd;
