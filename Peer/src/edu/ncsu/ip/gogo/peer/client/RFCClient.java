@@ -151,17 +151,22 @@ public class RFCClient implements Runnable {
         if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             System.out.println("RFCClient.pQuery() - PQuery request successful.");
             List<PeerInfo> peers = rsp.getActivePeers();
-            System.out.println("Printing active peer list ...");
-            int peerCount = 1;
-            for (PeerInfo peer : peers) {
-                if (peer.getHostname().equals(Initialize.myIp)) {
-                    System.out.println("(SELF) Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
-                } else {
-                    System.out.println("Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
-                }
-                peerCount++;
-            }
             
+            int peerCount = 1;
+            if (peers.size() == 1 && peers.get(0).getHostname().equals(Initialize.myIp) && rfcServerPort == peers.get(0).getPort()) {
+                System.out.println("No other active peers in the system!");
+            } else{
+                for (PeerInfo peer : peers) {
+                    System.out.println("Printing active peer list ...");
+                    if (peer.getHostname().equals(Initialize.myIp) && rfcServerPort == peer.getPort()) {
+                        //TODO: Remove this print statement before submission
+                        System.out.println("(SELF) Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                    } else {
+                        System.out.println("Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                    }
+                    peerCount++;
+                }
+            }
         } else {
             if (rsp == null) {
                 System.out.println("RFCClient.pQuery() - MessageResponse is null from RS");

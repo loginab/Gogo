@@ -254,8 +254,8 @@ public class RegistrationServer {
         
          ArrayList <PeerInfo> list  = new ArrayList<PeerInfo>();
          for (Peer peer : peerList) {     
-              if (peer.getFlag()) {
-                  PeerInfo peerInfo = new PeerInfo(peer.getHostname(), peer.getPort());
+             if (peer.getFlag()) {
+                 PeerInfo peerInfo = new PeerInfo(peer.getHostname(), peer.getPort());
                  list.add(peerInfo);
              }
          }
