@@ -81,14 +81,11 @@ public class Initialize {
         Thread serverThread = new Thread(new RFCServer(serverPort));
         serverThread.start();
         
-        /********************************* Initialize RFC Client **********************************/
+        /********************************* Initialize RFC Client in command line mode **********************************/
         
-        RFCClient client = new RFCClient(rsHostIpVal, rsPortVal, serverPort);
+        RFCClient client = new RFCClient(rsHostIpVal, rsPortVal, serverPort, 1);
         Thread clientThread = new Thread(client);
         clientThread.start();
-        //ExecutorService clientExec = Executors.newSingleThreadExecutor();
-        //clientExec.execute(client);
-        //ThreadUtils.shutdownAndAwaitTermination(clientExec);
         
     }
     

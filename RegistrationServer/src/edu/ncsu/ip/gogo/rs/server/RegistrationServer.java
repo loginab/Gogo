@@ -175,10 +175,9 @@ public class RegistrationServer {
                         
                         for (Peer peer : peerList) {     
                               if (peer.getFlag() && peer.getTTL() > 60) {
-                                  //System.out.println("RegistrationServer.startTTLDecrementThread() - TTL decrement for IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
+                                  System.out.println("RegistrationServer.startTTLDecrementThread() - TTL decrement for IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
                                   peer.setTTL(peer.getTTL()-60);
-                              }
-                              else if (peer.getFlag()){
+                              } else if (peer.getFlag()){
                                   peer.setTTL(0);
                                   peer.setFlag(false);
                                   System.out.println("RegistrationServer.startTTLDecrementThread() - Making peer inactive with IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());

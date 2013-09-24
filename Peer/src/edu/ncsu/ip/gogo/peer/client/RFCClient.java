@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Queue;
 import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
@@ -37,19 +38,27 @@ public class RFCClient implements Runnable {
     private final String rsHost;
     private final int rsPort;
     private final int rfcServerPort;
-    
+    private final int mode;     // 0 = command line mode, 1 = task mode
     private int cookie;
-    
 
-    public RFCClient(String rsHost, int rsPort, int rfcServerPort) {
+    public RFCClient(String rsHost, int rsPort, int rfcServerPort, int mode) {
         super();
         this.rsHost = rsHost;
         this.rsPort = rsPort;
         this.rfcServerPort = rfcServerPort;
+        this.mode = mode;
     }
 
     @Override
     public void run() {
+        if (mode == 0) {
+            commandLineMode();
+        } else {
+            taskMode();
+        }
+    }
+    
+    private void commandLineMode() {
         int userOpt = -1;
         Scanner in;
         
@@ -81,10 +90,28 @@ public class RFCClient implements Runnable {
                 case 4 : keepAlive();
                          break;
                          
-                case 5 : rfcQuery(in);
+                case 5 : System.out.println("Enter Hostname/IP of Peer: ");
+                         String peerIp = in.next();
+                         System.out.println("Enter RFC Server port of Peer: ");
+                         int peerServerPort = in.nextInt();
+                         
+                         rfcQuery(peerIp, peerServerPort);
+                         
+                         System.out.println("RFCClient.rfcQuery() - RFC Query request successful. Print RFC index?(Y/N)");
+                         if (in.next().equalsIgnoreCase("Y")) {
+                             RFCIndex.getInstance().printRfcIndex();
+                         }
                          break;
                          
-                case 6 : getRfc(in);
+                case 6 : System.out.println("Enter Rfc Number: ");
+                         String rfcNumber = in.next();
+                         
+                         getRfc(rfcNumber);
+                         
+                         System.out.println("Print RFC index?(Y/N)");
+                         if (in.next().equalsIgnoreCase("Y")) {
+                             RFCIndex.getInstance().printRfcIndex();
+                         }
                          break;
                   
                 case 7 : printRfcIndex();
@@ -95,7 +122,28 @@ public class RFCClient implements Runnable {
         } while (userOpt != 15);
         
         System.out.println("RFCClient.run() - Shutting down peer client ...");
-        in.close();
+        in.close();    
+    }
+    
+    private void taskMode() {
+        
+        register();
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        List<PeerInfo> peers = pQuery();
+        for (PeerInfo peer : peers) {
+            rfcQuery(peer.getHostname(), peer.getPort());
+        }
+        RFCIndex.getInstance().printRfcIndex();
+        
+        Queue<RFC> rfcs = RFCIndex.getInstance().getRfcs();
+        for (RFC rfc : rfcs) {
+            getRfc(rfc.getRfcNumber());
+        }
     }
     
     private void register() {
@@ -144,27 +192,30 @@ public class RFCClient implements Runnable {
         }
     }
     
-    private void pQuery() {
+    private List<PeerInfo> pQuery() {
         PQueryRequest pQuery = new PQueryRequest(Initialize.myIp, Initialize.myOs, Initialize.version, cookie);
         PQueryResponse rsp = (PQueryResponse) sendToRS(pQuery);
+        List<PeerInfo> peers = null;
         
         if (rsp != null && rsp.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
             System.out.println("RFCClient.pQuery() - PQuery request successful.");
-            List<PeerInfo> peers = rsp.getActivePeers();
+            peers = rsp.getActivePeers();
             
             int peerCount = 1;
             if (peers.size() == 1 && peers.get(0).getHostname().equals(Initialize.myIp) && rfcServerPort == peers.get(0).getPort()) {
                 System.out.println("No other active peers in the system!");
             } else{
+                System.out.println("Printing active peer list ...");
                 for (PeerInfo peer : peers) {
-                    System.out.println("Printing active peer list ...");
+                    
                     if (peer.getHostname().equals(Initialize.myIp) && rfcServerPort == peer.getPort()) {
-                        //TODO: Remove this print statement before submission
-                        System.out.println("(SELF) Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                        // TODO: Remove this print statement before submission
+                        // System.out.println("(SELF) Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
                     } else {
                         System.out.println("Peer " + peerCount + ": Hostname/IP = " + peer.getHostname() + ", Port: " + peer.getPort());
+                        peerCount++;
                     }
-                    peerCount++;
+                    
                 }
             }
         } else {
@@ -174,23 +225,21 @@ public class RFCClient implements Runnable {
                 System.out.println("RFCClient.pQuery() - MessageResponse failed with reason: " + rsp.getReason());
             }
         }
+        return peers;
     }
     
-    private void rfcQuery(Scanner in) {
-        System.out.println("Enter Hostname/IP of Peer: ");
-        String peerIp = in.next();
-        System.out.println("Enter RFC Server port of Peer: ");
-        int rfcServerPort = in.nextInt();
+    private void rfcQuery(String peerIp, int peerServerPort) {
         
+        if(peerIp.equals(Initialize.myIp) && peerServerPort == rfcServerPort) {
+            System.out.println("RFCClient.rfcQuery() - RFCQuery on itself is not supported!");
+            return;
+        }
         RFCQueryRequest rfcQueryRequest = new RFCQueryRequest(Initialize.myIp, Initialize.myOs, Initialize.version, -1);
-        RFCQueryResponse response = (RFCQueryResponse) send(rfcQueryRequest, peerIp, rfcServerPort);
+        RFCQueryResponse response = (RFCQueryResponse) send(rfcQueryRequest, peerIp, peerServerPort);
         
         if (response != null && response.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
-            RFCIndex.getInstance().mergeRfcIndex(response.getRfcIndex(), peerIp, rfcServerPort);
-            System.out.println("RFCClient.rfcQuery() - RFC Query request successful. Print RFC index?(Y/N)");
-            if (in.next().equalsIgnoreCase("Y")) {
-                RFCIndex.getInstance().printRfcIndex();
-            }
+            System.out.println("RFCClient.rfcQuery() - RFCQuery request successful.");
+            RFCIndex.getInstance().mergeRfcIndex(response.getRfcIndex(), peerIp, peerServerPort, rfcServerPort);
         } else {
             if (response == null) {
                 System.out.println("RFCClient.rfcQuery() - MessageResponse is null from peer");
@@ -200,34 +249,21 @@ public class RFCClient implements Runnable {
         }
     }
     
-    private void getRfc(Scanner in) {
-        
-        System.out.println("Enter Rfc Number: ");
-        String rfcNumber = in.next();
-        
+    public void getRfc(String rfcNumber) {
+
         RFC rfc = RFCIndex.getInstance().findRfcInIndex(rfcNumber);
         GetRFCResponse response = null;
         
         if (rfc == null) {
-            System.out.println("RFCClient.getRfc() - Rfc number " + rfcNumber + " doesn't exist in the index!");
-            System.out.println("Print RFC index?(Y/N)");
-            if (in.next().equalsIgnoreCase("Y")) {
-                RFCIndex.getInstance().printRfcIndex();
-            }
-            
+            System.out.println("RFCClient.getRfc() - Rfc number " + rfcNumber + " doesn't exist in the index!");            
         } else if (rfc.getPeerRfcServerPort() == -1) {
             System.out.println("RFCClient.getRfc() - Rfc number " + rfcNumber + " is available locally in rfc directory!");
-            System.out.println("Print RFC index?(Y/N)");
-            if (in.next().equalsIgnoreCase("Y")) {
-                RFCIndex.getInstance().printRfcIndex();
-            }
         } else {
             GetRFCRequest getRFCRequest = new GetRFCRequest(Initialize.myIp, Initialize.myOs, Initialize.version, -1, rfcNumber);
             System.out.println("RFCClient.getRfc() - Downloading rfc " + rfcNumber + " from Peer with IP: " + rfc.getPeerIp() + " and rfc server port: " + rfc.getPeerRfcServerPort());
             response = (GetRFCResponse) send(getRFCRequest, rfc.getPeerIp(), rfc.getPeerRfcServerPort());
             
             if (response != null && response.getStatus().equals(Constants.RESPONSE_STATUS_OK)) {
-                // TODO: Update rfc index here with newly downloaded rfc! Add bytestream to rfc class itself and send an object of rfc in GetRFCResponse
                 String filename = RFCIndex.getRfcFileNameFromNumber(rfc.getRfcNumber());
                 OutputStream out = null;
                 try {
