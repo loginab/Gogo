@@ -28,7 +28,7 @@ public class RegistrationServer {
     private final String STATUS_OK = "OK";
     private final String STATUS_ERROR = "ERROR";
     private final String version = "P2P-DI-GOGO/1.0";
-    private final int initialPeerTTL = 7200;     // 7200 seconds
+    private final int initialPeerTTL = 720;     // 720 seconds = 12 minutes
     
     
     private List<Peer> peerList;
