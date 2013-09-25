@@ -1,9 +1,11 @@
 package edu.ncsu.ip.gogo.peer.common;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.ncsu.ip.gogo.dao.RFC;
@@ -16,6 +18,7 @@ public final class RFCIndex {
     public static final String rfcFileNameEnd = ".txt";
     public static final String rfcFileNameStart = "rfc";
     private static final RFCIndex INSTANCE = new RFCIndex();
+    public static final String rfcFileContent = "Request for Comments: ";
     
     private RFCIndex() {
         rfcs = new ConcurrentLinkedQueue<RFC>();
@@ -34,12 +37,21 @@ public final class RFCIndex {
         for (int i = 0; i < filesInRfcDir.length; i++) {
             
             File file = filesInRfcDir[i];
+            String rfcNumber = null;
+            if (file.isFile()) {
+                if (file.getName().startsWith(rfcFileNameStart) && file.getName().endsWith(rfcFileNameEnd)) {
+                    rfcNumber = file.getName().substring(3, file.getName().indexOf(".txt"));
+                    RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), Initialize.myIp, -1);
+                    rfcs.add(rfc);
+                } else {
+                    rfcNumber = findRfcNumberFromContent(file);
+                    if (rfcNumber != null) {
+                        RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), Initialize.myIp, -1);
+                        rfcs.add(rfc);
+                    }
+                }
+            }
             
-            if (file.isFile() && file.getName().startsWith(rfcFileNameStart) && file.getName().endsWith(rfcFileNameEnd)) {
-                String rfcNumber = file.getName().substring(3, file.getName().indexOf(".txt"));
-                RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), Initialize.myIp, -1);
-                rfcs.add(rfc);
-            } 
         }
     }
     
@@ -64,16 +76,20 @@ public final class RFCIndex {
     
     public void mergeRfcIndex(Queue<RFC> peerRfcIndex, String peerIp, int peerRfcServerPort, int myRfcServerPort) {
         for (RFC rfc : peerRfcIndex) {
-            RFC entry = null;
-            if (rfc.getPeerIp().equals(peerIp) && rfc.getPeerRfcServerPort() == -1) {
-                entry = new RFC(rfc.getRfcNumber(), rfc.getFilename(), rfc.getLastModified(), rfc.getLength(),
-                    peerIp, peerRfcServerPort);
-            } else if (!rfc.getPeerIp().equals(Initialize.myIp) && rfc.getPeerRfcServerPort() != myRfcServerPort){
-                entry = rfc;
-            }
-            
-            if (entry != null) {
-                rfcs.add(entry);
+            if (!isRfcDuplicate(rfc, peerIp, peerRfcServerPort)) {
+                RFC entry = null;
+                if (rfc.getPeerIp().equals(peerIp) && rfc.getPeerRfcServerPort() == -1) {
+                    entry = new RFC(rfc.getRfcNumber(), rfc.getFilename(), rfc.getLastModified(), rfc.getLength(),
+                        peerIp, peerRfcServerPort);
+                } else if (rfc.getPeerIp().equals(Initialize.myIp) && rfc.getPeerRfcServerPort() == myRfcServerPort){
+                    entry = null;
+                } else {
+                    entry = rfc;
+                }
+                
+                if (entry != null) {
+                    rfcs.add(entry);
+                }
             }
         }
     }
@@ -98,6 +114,26 @@ public final class RFCIndex {
         }
     }
     
+    private boolean isRfcDuplicate(RFC rfc, String peerIp, int peerRfcServerPort) {
+        
+        for (RFC r : rfcs) {
+            if (rfc.getRfcNumber().equals(r.getRfcNumber()) 
+                    && rfc.getPeerIp().equals(r.getPeerIp())
+                    && rfc.getPeerRfcServerPort() == r.getPeerRfcServerPort()) {
+                return true;
+            } 
+            
+            if(rfc.getPeerRfcServerPort() == -1) {
+                if(rfc.getRfcNumber().equals(r.getRfcNumber()) 
+                    && rfc.getPeerIp().equals(r.getPeerIp())
+                    && peerRfcServerPort == r.getPeerRfcServerPort()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     
     public Queue<RFC> getRfcs() {
         return rfcs;
@@ -110,8 +146,28 @@ public final class RFCIndex {
         }
     }
     
+    private String findRfcNumberFromContent(File file) {
+        String rfcNumber = null;
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        
+        while (scanner.hasNextLine()) {
+           String lineFromFile = scanner.nextLine();
+           if(lineFromFile.contains(rfcFileContent)) { 
+               String[] tokens = lineFromFile.split("\\s");
+               System.out.println("rfcNumber: " + tokens[3]);
+               rfcNumber = tokens[3];
+               break;
+           }
+        }
+        return rfcNumber;
+    }
+    
     public static String getRfcFileNameFromNumber(String rfcNumber) {
         return relativeRfcDirPath + "/" + rfcFileNameStart + rfcNumber + rfcFileNameEnd;
-    }
-       
+    }       
 }

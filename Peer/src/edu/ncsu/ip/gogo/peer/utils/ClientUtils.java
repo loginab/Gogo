@@ -61,8 +61,6 @@ public class ClientUtils {
         System.out.println("isMCNodeLocal: " + iAddr.isMCNodeLocal());
         System.out.println("isMCLinkLocal: " + iAddr.isMCLinkLocal());
         System.out.println("isMac: " + !iAddr.getHostAddress().matches("[0-9|.]+"));
-        
-        
     }
     
 }
