@@ -49,9 +49,10 @@
   	<target name="jar" description="Create jar and MANIFEST.MF">
         <jar jarfile="Peer.jar">
         	<fileset dir="bin" />
-        	<fileset dir="lib">
+        	<zipgroupfileset dir="lib" includes="**/*.jar" />
+        	<!--fileset dir="lib">
         		   <include name="*.jar"/>
-        	</fileset>
+        	</fileset-->
             <manifest>
             	<attribute name="Class-Path" value="${lib.list}" />
                 <attribute name="Main-Class" value="edu.ncsu.ip.gogo.peer.main.Initialize" />
