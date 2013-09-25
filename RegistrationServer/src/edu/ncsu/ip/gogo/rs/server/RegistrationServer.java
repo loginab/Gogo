@@ -28,7 +28,7 @@ public class RegistrationServer {
     private final String STATUS_OK = "OK";
     private final String STATUS_ERROR = "ERROR";
     private final String version = "P2P-DI-GOGO/1.0";
-    private final int initialPeerTTL = 720;     // 720 seconds = 12 minutes
+    private final int initialPeerTTL = 7200;     // 7200 seconds = 2 hours
     
     
     private List<Peer> peerList;
@@ -175,7 +175,7 @@ public class RegistrationServer {
                         
                         for (Peer peer : peerList) {     
                               if (peer.getFlag() && peer.getTTL() > 60) {
-                                  System.out.println("RegistrationServer.startTTLDecrementThread() - TTL decrement for IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
+                                  // System.out.println("RegistrationServer.startTTLDecrementThread() - TTL decrement for IP: " + peer.getHostname() + " and RFC server port: " +peer.getPort());
                                   peer.setTTL(peer.getTTL()-60);
                               } else if (peer.getFlag()){
                                   peer.setTTL(0);
