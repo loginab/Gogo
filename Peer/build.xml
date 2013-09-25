@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="Peer">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="Peer.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/commons-cli-1.2.jar"/>
+        <pathelement location="lib/commons-io-2.4.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    	<delete file="Peer.jar" />
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project,jar" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="Peer.classpath"/>
+        </javac>
+    </target>
+              	
+    <path id="build-classpath">
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+              	
+    <manifestclasspath property="lib.list" jarfile="Peer.jar">
+        <classpath refid="build-classpath"/>
+    </manifestclasspath>   
+              	
+  	<target name="jar" description="Create jar and MANIFEST.MF">
+        <jar jarfile="Peer.jar">
+        	<fileset dir="bin" />
+        	<fileset dir="lib">
+        		   <include name="*.jar"/>
+        	</fileset>
+            <manifest>
+            	<attribute name="Class-Path" value="${lib.list}" />
+                <attribute name="Main-Class" value="edu.ncsu.ip.gogo.peer.main.Initialize" />
+            </manifest>
+        </jar>
+  	</target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target name="Peer">
+        <java classname="edu.ncsu.ip.gogo.peer.main.Initialize" failonerror="true" fork="yes">
+            <arg line="-rsIp 10.139.83.155 -rsPort 65423 -mode 1"/>
+            <classpath refid="Peer.classpath"/>
+        </java>
+    </target>
+</project>
