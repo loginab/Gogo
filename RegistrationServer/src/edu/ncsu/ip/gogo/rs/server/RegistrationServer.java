@@ -184,7 +184,7 @@ public class RegistrationServer {
                               }            
                          }
                     } catch (InterruptedException ie) {
-                        // TODO : Handle this exception
+                        // Do nothing;
                     }
                 }
             }
