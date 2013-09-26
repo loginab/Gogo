@@ -20,6 +20,7 @@ public class Initialize {
     private final static int serverPortEndRange = 65500;
     private final static String RS_IP_OPT = "rsIp";
     private final static String RS_PORT_OPT = "rsPort";
+    private final static String MODE_OPT = "mode";
     
     public final static String myIp;
     public final static String myOs;
@@ -47,9 +48,15 @@ public class Initialize {
                                      .isRequired()
                                      .create(RS_PORT_OPT);
         
+        Option mode = OptionBuilder.withArgName(MODE_OPT)
+                                   .hasArg()
+                                   .withDescription("1 for task mode")
+                                   .create(MODE_OPT);
+        
         Options options = new Options();
         options.addOption(rsIp);
         options.addOption(rsPort);
+        options.addOption(mode);
         
         CommandLineParser parser = new BasicParser();
         CommandLine line = null;
@@ -64,6 +71,7 @@ public class Initialize {
         
         String rsHostIpVal = null;
         int rsPortVal = -1;
+        int modeVal = -1;
         
         if (line.hasOption(RS_IP_OPT)) {
             rsHostIpVal = line.getOptionValue(RS_IP_OPT);
@@ -73,6 +81,9 @@ public class Initialize {
             rsPortVal = Integer.parseInt(line.getOptionValue(RS_PORT_OPT));
         }
         
+        if (line.hasOption(MODE_OPT)) {
+            modeVal = Integer.parseInt(line.getOptionValue(MODE_OPT));
+        }
 
         
         /********************************* Initialize RFC Server **********************************/
@@ -83,7 +94,7 @@ public class Initialize {
         
         /********************************* Initialize RFC Client in command line mode **********************************/
         
-        RFCClient client = new RFCClient(rsHostIpVal, rsPortVal, serverPort, 1);
+        RFCClient client = new RFCClient(rsHostIpVal, rsPortVal, serverPort, modeVal);
         Thread clientThread = new Thread(client);
         clientThread.start();
         

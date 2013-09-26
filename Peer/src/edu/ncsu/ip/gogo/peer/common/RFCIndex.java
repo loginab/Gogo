@@ -41,12 +41,14 @@ public final class RFCIndex {
             if (file.isFile()) {
                 if (file.getName().startsWith(rfcFileNameStart) && file.getName().endsWith(rfcFileNameEnd)) {
                     rfcNumber = file.getName().substring(3, file.getName().indexOf(".txt"));
-                    RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), Initialize.myIp, -1);
+                    RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), 
+                            Initialize.myIp, -1, 7200);
                     rfcs.add(rfc);
                 } else {
                     rfcNumber = findRfcNumberFromContent(file);
                     if (rfcNumber != null) {
-                        RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(), Initialize.myIp, -1);
+                        RFC rfc = new RFC(rfcNumber, file.getName(), file.lastModified(), file.length(),
+                                Initialize.myIp, -1, 7200);
                         rfcs.add(rfc);
                     }
                 }
@@ -54,7 +56,12 @@ public final class RFCIndex {
             
         }
     }
-    
+
+    public int countRfcs() {
+        File rfcDir = new File(relativeRfcDirPath);
+        String[] files = rfcDir.list();
+        return files.length;
+    }
     
     public void printRfcIndex() {
         
@@ -80,7 +87,7 @@ public final class RFCIndex {
                 RFC entry = null;
                 if (rfc.getPeerIp().equals(peerIp) && rfc.getPeerRfcServerPort() == -1) {
                     entry = new RFC(rfc.getRfcNumber(), rfc.getFilename(), rfc.getLastModified(), rfc.getLength(),
-                        peerIp, peerRfcServerPort);
+                        peerIp, peerRfcServerPort, 7200);
                 } else if (rfc.getPeerIp().equals(Initialize.myIp) && rfc.getPeerRfcServerPort() == myRfcServerPort){
                     entry = null;
                 } else {

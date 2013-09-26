@@ -13,10 +13,11 @@ public class RFC implements Serializable {
     private final long length;
     private final String peerIp;
     private final int peerRfcServerPort;     // -1 if the RFC is available locally
+    private final int TTL;
 
     
     public RFC(String rfcNumber, String filename, long lastModified,
-            long length, String peerIp, int peerPort) {
+            long length, String peerIp, int peerPort, int ttl) {
         super();
         this.rfcNumber = rfcNumber;
         this.filename = filename;
@@ -24,6 +25,7 @@ public class RFC implements Serializable {
         this.length = length;
         this.peerIp = peerIp;
         this.peerRfcServerPort = peerPort;
+        this.TTL = ttl;
     }
 
 
@@ -54,6 +56,11 @@ public class RFC implements Serializable {
 
     public int getPeerRfcServerPort() {
         return peerRfcServerPort;
+    }
+
+
+    public int getTTL() {
+        return TTL;
     }
     
 }

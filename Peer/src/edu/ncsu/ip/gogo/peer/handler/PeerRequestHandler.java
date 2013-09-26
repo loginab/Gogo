@@ -33,12 +33,12 @@ public class PeerRequestHandler implements Runnable {
     public void run() {
         
         if (request instanceof RFCQueryRequest) {
-            System.out.println("PeerRequestHandler - RFCQuery request from peer with IP: " + request.getIp());
+            // System.out.println("PeerRequestHandler - RFCQuery request from peer with IP: " + request.getIp());
             RFCQueryResponse response = new RFCQueryResponse(Initialize.myIp, Initialize.myOs, Initialize.version, Constants.RESPONSE_STATUS_OK,
                     null, RFCIndex.getInstance().getRfcs());
             sendResponseToPeer(clientSocket, response);
         } else if (request instanceof GetRFCRequest) { 
-            System.out.println("PeerRequestHandler - GetRFC request from peer with IP: " + request.getIp());
+            // System.out.println("PeerRequestHandler - GetRFC request from peer with IP: " + request.getIp());
             GetRFCRequest req = (GetRFCRequest) request;
             RFC rfc = RFCIndex.getInstance().findRfcInIndex(req.getRfcNumber()); 
             
@@ -86,8 +86,10 @@ public class PeerRequestHandler implements Runnable {
             oos.writeObject(rsp);
         } catch (IOException e) {
             if (e.getMessage().equals("Connection refused")) {
-                System.out.println("Unable to connect to peer. Connection refused");
-            } else{
+                System.out.println("PeerRequestHandler.sendResponseToPeer() - Unable to connect to peer. Connection refused");
+            } else if (e.getMessage().equals("Connection timed out")) { 
+                System.out.println("PeerRequestHandler.sendResponseToPeer() - Unable to connect to host. Connection timed out");
+            } else {
                 System.out.println("PeerRequestHandler.sendResponseToPeer() - IOException with message: " + e.getMessage());
                 e.printStackTrace();
             }
