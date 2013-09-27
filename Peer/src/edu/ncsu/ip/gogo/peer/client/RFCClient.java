@@ -163,7 +163,7 @@ public class RFCClient implements Runnable {
     private void task2Best() {
         
         long taskStartTime = System.nanoTime();
-        
+        Scanner in = new Scanner(System.in);
         register();
         try {
             Thread.sleep(5000);
@@ -191,6 +191,7 @@ public class RFCClient implements Runnable {
             nbr = peers.get(nbrIndex);
             System.out.println("Neighbour IP: " + nbr.getHostname() + ", port: " + nbr.getPort());
             rfcQuery(nbr.getHostname(), nbr.getPort());
+            in.nextLine();
             // System.out.println("RFC Index after rfcQuery");
             // RFCIndex.getInstance().printRfcIndex();
             
@@ -204,6 +205,7 @@ public class RFCClient implements Runnable {
             }
             
             round++;
+            in.nextLine();
         }
         
         long duration = System.nanoTime() - taskStartTime - 5000000000L;
